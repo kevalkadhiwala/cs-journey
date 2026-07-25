@@ -15,6 +15,13 @@ def display_menu():
 choice = 0
 students = {}
 
+with open("students.txt", "r") as file:
+    students = {}
+    for line in file:
+        line = line.strip()
+        name, mark = line.split(",")
+        students[name] = int(mark)
+
 while choice != 5:
     display_menu()
 
@@ -107,5 +114,9 @@ while choice != 5:
 
     elif choice > 7 or choice < 1:
         print("Invalid choice! Please enter a number between 1 and 6")
+
+with open("students.txt", "w") as file:
+    for name,mark in students.item():
+        file.write(f"{name},{mark}\n")
 print("Goodbye!")
     
