@@ -1,9 +1,12 @@
-class Student:
+from abc import ABC, abstractmethod
 
-    def __init__(self, name, mark, age):
+class Student(ABC):
+
+    def __init__(self, name, mark, age, course):
         self.name = name
         self.mark = mark
         self.age = age
+        self.course = course
 
     @property
     def name(self):
@@ -42,7 +45,16 @@ class Student:
             self._age = new_age
 
         else:
-            raise ValueError("Age must be greater than 0.")    
+            raise ValueError("Age must be greater than 0.") 
+
+    @abstractmethod
+    def course_info(self):
+        pass   
+
+    @property
+    @abstractmethod
+    def student_type(self):
+        pass
 
     def introduce(self):
         print(f"Hi, my name is {self.name}.")
@@ -84,13 +96,99 @@ class Student:
         print(f"Mark: {self.mark}")
         print(f"Age: {self.age}")
         print(f"Grade: {self.get_grade()}")
+        self.course.display()
 
     def __str__(self):
         return f"Student(name={self.name}, age={self.age}, mark={self._mark})"
 
-student1 = Student("Alice", 85, 20)
-student1.mark = 95
-student1.age = 21
-student1.name = "Charlie"
+####
+class ComputerScienceStudent(Student):
+    
+    def __init__(self, name, mark, age, programming_language, course):
+        super().__init__(name, mark, age, course)
+        self.programming_language = programming_language
 
-student1.display()
+    @property
+    def programming_language(self):
+        return self._programming_language
+    
+    @programming_language.setter
+    def programming_language(self, new_language):
+        self._programming_language = new_language
+
+    def course_info(self):
+        return f"{self.name} studies Computer Science using {self.programming_language}."
+
+    @property
+    def student_type(self):
+        return "Computer Science"
+
+    def display(self):
+        super().display()
+        print(f"Programming Language: {self.programming_language}")
+
+#####
+class BusinessStudent(Student):
+    
+    def __init__(self, name, mark, age, specialisation, course):
+        super().__init__(name, mark, age, course)
+        self.specialisation = specialisation
+
+    @property
+    def specialisation(self):
+        return self._specialisation
+    
+    @specialisation.setter
+    def specialisation(self, new_specialisation):
+        self._specialisation = new_specialisation
+
+    def course_info(self):
+        return f"{self.name} studies Business specialising in {self.specialisation}."
+
+    @property
+    def student_type(self):
+        return "Business"
+
+    def display(self):
+        super().display()
+        print(f"Specialisation: {self.specialisation}")
+
+class Course:
+
+    def __init__(self, course_name, course_code):
+        self.course_name = course_name
+        self.course_code = course_code
+        self.students = []
+
+    def add_student(self, student):
+        self.students.append(student)
+
+    def display_students(self):
+        if self.students:
+            print("Enrolled students:")
+            for student in self.students:
+                print(student.name)
+        else:
+            print("No students Enrolled!")
+
+    def remove_student(self, student):
+        if student in self.students:
+            self.students.remove(student)
+            print("Student removed successfully!")
+        else:
+            print("Student is not Enrolled!")         
+
+    def display(self):
+        print(f"Course: {self.course_name}")
+        print(f"Code: {self.course_code}")
+
+##### Output
+course1 = Course("Computer Science", "CSC101")
+student1 = ComputerScienceStudent("Alice", 85, 20, "Python", course1)
+course1.add_student(student1)
+
+student2 = BusinessStudent("Bob", 72, 19, "Finance", course1)
+course1.add_student(student2)
+
+course1.remove_student(student1)
+course1.display_students()
