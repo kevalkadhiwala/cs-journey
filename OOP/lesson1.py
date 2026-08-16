@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 import json
 
+# ============================================================
+# STUDENT
+# ============================================================
+
 class Student(ABC):
 
     def __init__(self, name, mark, age, course):
@@ -16,12 +20,15 @@ class Student(ABC):
     @name.setter
     def name(self, new_name):
 
-        if isinstance(new_name, str) and new_name.strip():
-            self._name = new_name.strip()
-        elif not isinstance(new_name, str):
-            raise ValueError("Name must be a string.")
-        else:
-            raise TypeError("Name cannot be empty.")
+        # TypeError is more appropriate for wrong type
+        if not isinstance(new_name, str):
+            raise TypeError("Name must be a string.")
+
+        # ValueError is appropriate for an empty string
+        if not new_name.strip():
+            raise ValueError("Name cannot be empty.")
+
+        self._name = new_name.strip()
         
     @property
     def mark(self):
@@ -29,7 +36,10 @@ class Student(ABC):
 
     @mark.setter
     def mark(self, new_mark):
-       
+
+        if not isinstance(new_mark, (int, float)):
+            raise TypeError("Mark must be a number.")
+    
         if 0 <= new_mark <= 100: 
             self._mark = new_mark
         else:
@@ -41,6 +51,9 @@ class Student(ABC):
 
     @age.setter
     def age(self, new_age):
+
+        if not isinstance(new_age, int):
+            raise TypeError("Age must be an integer.")
 
         if 0 < new_age:
             self._age = new_age
@@ -83,15 +96,11 @@ class Student(ABC):
             return "Invalid marks!" 
 
     def get_status(self):
-        if 40 <= self._mark <= 100:
+        if 40 <= self._mark:
             return "passing!"
         
-        elif 0 <= self._mark < 40:
-            return "failing!"
+        return "failing!"
         
-        else:
-            return "Invalid Marks!"   
-
     def __eq__(self, other):
         return isinstance(other, Student) and self.name == other.name
 
@@ -220,13 +229,18 @@ class StudentManager:
     def add_student(self, student):
         if student in self.students:
             print("Student already exists!")
+
         else:
             self.students.append(student)
+            student.course.add_student(student)
+
             print("Student added successfully!")
 
     def remove_student(self, student):
         if student in self.students:
             self.students.remove(student)
+            student.course.remove_student(student)
+
             print("Student removed successfully!")
         else:
             print("Student not found!")
@@ -247,8 +261,15 @@ class StudentManager:
 
     def update_mark(self, name, new_mark):
         student = self.find_student(name)
+
         if student:
-            student.mark = new_mark
+
+            try:
+                student.mark = new_mark
+                print("Mark updated successfully!")
+            except (ValueError, TypeError) as error:
+                print(f"Error: {error}")
+
         else:
             print("Student not found")
 
@@ -297,36 +318,137 @@ class StudentManager:
 
         loaded_students = []
         for student_data in data:
-            if student_data["student_type"] == "Computer Science":
-                course = Course(student_data["course_name"],student_data["course_code"])
-                student = ComputerScienceStudent(
-                    student_data["name"],
-                    student_data["mark"],
-                    student_data["age"],
-                    student_data["programming_language"],
-                    course
-                )
-                loaded_students.append(student)
-            elif student_data["student_type"] == "Business":
-                course = Course(student_data["course_name"],student_data["course_code"])
-                student = BusinessStudent(
-                    student_data["name"],
-                    student_data["mark"],
-                    student_data["age"],
-                    student_data["specialisation"],
-                    course
-                )
+            try:
+
+                if student_data["student_type"] == "Computer Science":
+                    course = Course(student_data["course_name"],student_data["course_code"])
+                    student = ComputerScienceStudent(
+                        student_data["name"],
+                        student_data["mark"],
+                        student_data["age"],
+                        student_data["programming_language"],
+                        course
+                    )
+                    
+                elif student_data["student_type"] == "Business":
+                    course = Course(student_data["course_name"],student_data["course_code"])
+                    student = BusinessStudent(
+                        student_data["name"],
+                        student_data["mark"],
+                        student_data["age"],
+                        student_data["specialisation"],
+                        course
+                    )
+
+                else:
+                    print(f"Unknown student type for "
+                        f"{student_data['name']}. Skipping.")
+                    continue
+
+                course.add_student(student)
                 loaded_students.append(student)
 
+            except KeyError as error:
+                print(f"Missing data in JSON: {error}."
+                      f"Skipping student.")
+
         self.students = loaded_students
+
         return loaded_students
 
     def display_summary(self):
-        print("=" * 4 + "  Student Manager  " + "=" * 4)
-        print(f"Total Students: {self.student_count()}")
-        print(f"Computer Science: {len(self.find_by_type('Computer Science'))}")
-        print(f"Business: {len(self.find_by_type('Business'))}")
+        print()
+        print("=" * 10)
+        print("Student Manager")
+        print("=" * 10)
 
+        print(
+            f"Total Students: "
+            f"{self.student_count()}"
+        )
+
+        print(
+            f"Computer Science: "
+            f"{len(self.find_by_type('Computer Science'))}"
+        )
+
+        print(
+            f"Business: "
+            f"{len(self.find_by_type('Business'))}"
+        )
+
+
+# ============================================================
+# INPUT VALIDATION FUNCTIONS
+# ============================================================
+# Moved validation into separate functions.
+# This keeps the main menu much cleaner.
+
+def get_valid_mark():
+
+    while True:
+
+        try:
+
+            mark = int(input("Enter mark: "))
+
+            if 0 <= mark <= 100:
+
+                return mark
+
+            print("Mark must be between 0 and 100.")
+
+        except ValueError:
+
+            print("Enter a valid number!")
+
+def get_valid_age():
+
+    while True:
+
+        try:
+
+            age = int(input("Enter age: "))
+
+            if age > 0:
+
+                return age
+
+            print("Age must be greater than 0.")
+
+        except ValueError:
+
+            print("Enter a valid number!")
+
+
+def get_student_type():
+
+    while True:
+
+        student_type = input(
+            "Enter student type "
+            "(1. Computer Science / 2. Business): "
+        )
+
+        if student_type in ["1", "2"]:
+
+            return student_type
+
+        print("Invalid student type!")
+
+
+def get_menu_choice():
+
+    valid_choices = [
+        "1", "2", "3",
+        "4", "5", "6",
+        "7", "8", "9"
+    ]
+
+# ============================================================
+# MENU
+# ============================================================
+  
 def display_menu():
     print()
     print("1. Add student")
@@ -339,27 +461,43 @@ def display_menu():
     print("8. Save students")
     print("9. Exit")
 
+
+# ============================================================
+# MAIN PROGRAM
+# ============================================================
+
 manager = StudentManager()
+
+manager.load_students("student.json")
 
 while True:
     display_menu()
-    choice = input("Enter your choice: ")
+
+    choice = get_menu_choice()
+
     if choice == "9":
+        save_choice = input(
+            "Save changes before exiting? (y/n): "
+        ).lower()
+
+        if save_choice == "y":
+
+            manager.save_students("students.json")
+
         print("Goodbye!")
+
         break
 
-    elif choice == "2":
-        manager.display_students()
-
-    elif choice == "8":
-        manager.save_students("students.json")
-        print("Students saved successfully!")
-
     elif choice == "1":
-        student_type = input("Enter student type (1. Computer Science / 2. Business): ")
+
+        student_type = get_student_type()
+
         name = input("Enter student name: ")
-        mark = int(input("Enter mark: "))
-        age = int(input("Enter age: "))
+
+        mark = get_valid_mark()
+
+        age = get_valid_age()
+ 
         course_name = input("Enter course name: ")
         course_code = input("Enter course code: ")
 
@@ -372,6 +510,7 @@ while True:
                 programming_language, course
             )
             manager.add_student(student)
+
         elif student_type == "2":
             specialisation = input("Enter your specialisation: ")
             student = BusinessStudent(
@@ -379,10 +518,15 @@ while True:
                 specialisation, course
             )
             manager.add_student(student)
+
         else:
             print("Invalid student type!")
 
+    elif choice == "2":
+        manager.display_students()
+
     elif choice == "3":
+
         name = input("Enter student name: ")
         student = manager.find_student(name)
 
@@ -402,7 +546,7 @@ while True:
 
     elif choice == "5":
         name = input("Enter student name: ")
-        new_mark = int(input("Enter student new mark: "))
+        new_mark = get_valid_mark()
 
         manager.update_mark(name, new_mark)
 
@@ -420,9 +564,8 @@ while True:
     elif choice == "7":
         manager.display_summary()
 
-    else:
-        print("Invalid Choice!20")
-
+    elif choice == "8":
+        manager.save_students("students.json")
 
 
 ##### Output

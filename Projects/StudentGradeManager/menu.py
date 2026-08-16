@@ -1,0 +1,11 @@
+def display_menu():
+    print()
+    print("1. Add student")
+    print("2. View students")
+    print("3. Find student")
+    print("4. Remove student")
+    print("5. Update mark")
+    print("6. Find by course")
+    print("7. Student summary")
+    print("8. Save students")
+    print("9. Exit")

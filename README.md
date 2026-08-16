@@ -1,19 +1,19 @@
-# CS Journey
+# Student Management System
 
-Welcome to my Computer Science journey.
+A Python OOP project demonstrating:
 
-## Goals
+- Abstract Classes
+- Inheritance
+- Polymorphism
+- Encapsulation
+- JSON Persistence
+- Error Handling
+- CLI Design
 
-- Become a Software Engineer
-- Learn Python
-- Master SQL
-- Build real-world projects
-- Secure a software engineering internship in Ireland
-
-## Progress
-
-### Day 1
-- Created GitHub repository
-- Installed and configured Git
-- Set up VS Code
-- Ready to start Python
+Features:
+- Add Students
+- Remove Students
+- Update Marks
+- Save/Load JSON
+- Course Management
+- Student Statistics
