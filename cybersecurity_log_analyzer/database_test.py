@@ -25,12 +25,15 @@ cursor.execute("""
 connection.commit()
 
 cursor.execute("""
-    SELECT COUNT(*)
+    SELECT ip_address, COUNT(*)
     FROM security_events
-    WHERE event_type = 'LOGIN_FAILED' AND ip_address = '192.168.1.99';
-""")
+    WHERE event_type = 'LOGIN_FAILED'
+    GROUP BY ip_address
+    HAVING COUNT(*) >= 3
+    ORDER BY COUNT(*) DESC;
+    """)
 
-rows = cursor.fetchone()
+rows = cursor.fetchall()
 
 for row in rows:
     print(row)
