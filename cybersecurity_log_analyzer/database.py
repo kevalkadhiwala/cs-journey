@@ -19,7 +19,8 @@ class DatabaseManager:
                 timestamp TEXT,
                 ip_address TEXT,
                 event_type TEXT,
-                username TEXT
+                username TEXT,
+                UNIQUE(timestamp, ip_address, event_type, username)
             )     
         """)
 
@@ -31,7 +32,7 @@ class DatabaseManager:
         cursor = connection.cursor()
 
         cursor.execute("""
-            INSERT INTO security_events
+            INSERT OR IGNORE INTO security_events
             (timestamp, ip_address, event_type, username)
             VALUES (?, ?, ?, ?)
         """, (
@@ -70,22 +71,48 @@ class DatabaseManager:
 
         return events
 
-db = DatabaseManager("security.db")
+    def get_events_by_ip(self, ip_address):
 
-db.create_table()
+        connection = self.connect()
+        cursor = connection.cursor()
 
-event = LogEvent(
-    "2026-08-16 10:05:00",
-    "192.168.1.77",
-    "LOGIN_FAILED",
-    "unknown"
-)
+        cursor.execute("""
+            SELECT timestamp, ip_address, event_type, username
+            FROM security_events
+            WHERE ip_address = ?
+        """, (ip_address,))
 
-db.insert_event(event)
+        rows = cursor.fetchall()
 
-events = db.get_events()
+        connection.close()
 
-for event in events:
-    print(event.ip_address, event.event_type)
+        events = []
 
-print("Event inserted!")
+        for row in rows:
+            event = LogEvent(
+                row[0],
+                row[1],
+                row[2],
+                row[3]
+            )
+
+            events.append(event)
+
+        return events
+    def find_suspicious_ips(self, threshold=3):
+        connection = self.connect()
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            SELECT ip_address, COUNT(*)
+            FROM security_events
+            WHERE event_type = 'LOGIN_FAILED'
+            GROUP BY ip_address
+            HAVING COUNT(*) >= ?
+            ORDER BY COUNT(*) DESC
+        """, (threshold,))
+
+        rows = cursor.fetchall()
+        connection.close()
+
+        return rows
