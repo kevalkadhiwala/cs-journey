@@ -71,16 +71,49 @@ class DatabaseManager:
 
         return events
 
-    def get_events_by_ip(self, ip_address):
-
+    def find_suspicious_ips(self, threshold=3):
         connection = self.connect()
         cursor = connection.cursor()
 
         cursor.execute("""
+            SELECT ip_address, COUNT(*)
+            FROM security_events
+            WHERE event_type = 'LOGIN_FAILED'
+            GROUP BY ip_address
+            HAVING COUNT(*) >= ?
+            ORDER BY COUNT(*) DESC
+        """, (threshold,))
+
+        rows = cursor.fetchall()
+        connection.close()
+
+        return rows
+
+    def get_events_filtered(self, ip_address=None, event_type=None):
+
+        connection = self.connect()
+        cursor = connection.cursor()
+
+        query = """
             SELECT timestamp, ip_address, event_type, username
             FROM security_events
-            WHERE ip_address = ?
-        """, (ip_address,))
+        """
+
+        conditions = []
+        values = []
+
+        if ip_address:
+            conditions.append("ip_address = ?")
+            values.append(ip_address)
+
+        if event_type:
+            conditions.append("event_type = ?")
+            values.append(event_type)
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        cursor.execute(query, values)
 
         rows = cursor.fetchall()
 
@@ -99,20 +132,56 @@ class DatabaseManager:
             events.append(event)
 
         return events
-    def find_suspicious_ips(self, threshold=3):
+
+    def get_event_statistics(self):
+
         connection = self.connect()
         cursor = connection.cursor()
 
         cursor.execute("""
-            SELECT ip_address, COUNT(*)
+            SELECT event_type, COUNT(*)
             FROM security_events
-            WHERE event_type = 'LOGIN_FAILED'
-            GROUP BY ip_address
-            HAVING COUNT(*) >= ?
-            ORDER BY COUNT(*) DESC
-        """, (threshold,))
+            GROUP BY event_type
+        """)
 
         rows = cursor.fetchall()
+
         connection.close()
 
-        return rows
+        statistics = {}
+
+        for row in rows:
+            statistics[row[0]] = row[1]
+
+        return statistics
+
+    def get_recent_events(self, limit=10):
+
+        connection = self.connect()
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            SELECT timestamp, ip_address, event_type, username
+            FROM security_events
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """, (limit,))
+
+        rows = cursor.fetchall()
+
+        connection.close()
+
+        events = []
+
+        for row in rows:
+
+            event = LogEvent(
+                row[0],
+                row[1],
+                row[2],
+                row[3]
+            )
+
+            events.append(event)
+
+        return events
