@@ -1,5 +1,5 @@
 import sqlite3
-from log_event import LogEvent
+from Projects.cybersecurity_log_analyzer.log_event import LogEvent
 
 class DatabaseManager:
 

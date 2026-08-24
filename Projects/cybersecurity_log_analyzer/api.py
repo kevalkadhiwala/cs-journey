@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from database import DatabaseManager
-from log_analyzer import LogAnalyzer
+from Projects.cybersecurity_log_analyzer.database import DatabaseManager
+from Projects.cybersecurity_log_analyzer.log_analyzer import LogAnalyzer
 
 app = FastAPI()
 
@@ -83,7 +83,7 @@ def get_events(
     else:
 
         events = db.get_recent_events()
-        
+
     return {
         "count": len(events),
         "events": [

@@ -1,6 +1,6 @@
-from log_event import LogEvent
-from database import DatabaseManager
-from log_analyzer import LogAnalyzer
+from Projects.cybersecurity_log_analyzer.log_event import LogEvent
+from Projects.cybersecurity_log_analyzer.database import DatabaseManager
+from Projects.cybersecurity_log_analyzer.log_analyzer import LogAnalyzer
 
 db = DatabaseManager("security.db")
 db.create_table()
