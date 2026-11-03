@@ -222,11 +222,22 @@
     </table>
 
     <script>
+    // Log data (usernames, IPs) can be controlled by an attacker,
+    // so escape it before putting it into innerHTML (prevents XSS).
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
 
         async function loadStatistics() {
 
             const response = await fetch(
-                "http://127.0.0.1:8000/statistics"
+                "/statistics"
             );
 
             const data = await response.json();
@@ -247,7 +258,7 @@
         async function loadSuspiciousIPs() {
 
             const response = await fetch(
-                "http://127.0.0.1:8000/suspicious-ips"
+                "/suspicious-ips"
             );
 
             const data = await response.json();
@@ -262,18 +273,18 @@
                 const row = document.createElement("tr");
 
                 row.innerHTML = `
-                    <td>${ip.ip_address}</td>
-                    <td>${ip.failed_attempts}</td>
-                    <td>${ip.targeted_usernames.join(", ")}</td>
+                    <td>${escapeHtml(ip.ip_address)}</td>
+                    <td>${escapeHtml(ip.failed_attempts)}</td>
+                    <td>${escapeHtml(ip.targeted_usernames.join(", "))}</td>
                     <td class="${ip.brute_force ? "warning" : ""}">
                         ${ip.brute_force ? "Yes" : "No"}
                     </td>
                     <td class="${ip.success_after_failures ? "warning" : ""}">
                         ${ip.success_after_failures ? "Yes" : "No"}
                     </td>
-                    <td>${ip.risk_score}</td>
-                    <td class="risk-${ip.risk_level.toLowerCase()}">
-                        ${ip.risk_level}
+                    <td>${escapeHtml(ip.risk_score)}</td>
+                    <td class="risk-${escapeHtml(ip.risk_level.toLowerCase())}">
+                        ${escapeHtml(ip.risk_level)}
                     </td>
                 `;
 
@@ -284,7 +295,7 @@
         async function loadHighRisk() {
 
             const response = await fetch(
-                "http://127.0.0.1:8000/high-risk"
+                "/high-risk"
             );
 
             const data = await response.json();
@@ -307,17 +318,17 @@
 
                 <p>
                     <strong>IP Address:</strong>
-                    ${ip.ip_address}
+                    ${escapeHtml(ip.ip_address)}
                 </p>
 
                 <p>
                     <strong>Risk Score:</strong>
-                    ${ip.risk_score}
+                    ${escapeHtml(ip.risk_score)}
                 </p>
 
                 <p>
                     <strong>Failed Attempts:</strong>
-                    ${ip.failed_attempts}
+                    ${escapeHtml(ip.failed_attempts)}
                 </p>
 
                 <p>
@@ -337,7 +348,7 @@
         const ip = document.getElementById("ip-filter").value;
         const eventType = document.getElementById("event-filter").value;
 
-        let url = "http://127.0.0.1:8000/events";
+        let url = "/events";
 
         const params = new URLSearchParams();
 
@@ -367,10 +378,10 @@
             const row = document.createElement("tr");
 
             row.innerHTML = `
-                <td>${event.timestamp}</td>
-                <td>${event.ip_address}</td>
-                <td>${event.event_type}</td>
-                <td>${event.username}</td>
+                <td>${escapeHtml(event.timestamp)}</td>
+                <td>${escapeHtml(event.ip_address)}</td>
+                <td>${escapeHtml(event.event_type)}</td>
+                <td>${escapeHtml(event.username)}</td>
             `;
 
             tableBody.appendChild(row);

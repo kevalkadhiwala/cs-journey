@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import json
 
 # ============================================================
 # STUDENT
@@ -37,13 +36,14 @@ class Student(ABC):
     @mark.setter
     def mark(self, new_mark):
 
-        if not isinstance(new_mark, (int, float)):
+        # bool is a subclass of int in Python, so reject it explicitly
+        if isinstance(new_mark, bool) or not isinstance(new_mark, (int, float)):
             raise TypeError("Mark must be a number.")
     
         if 0 <= new_mark <= 100: 
             self._mark = new_mark
         else:
-            raise ValueError("Mark must be btw 0 and 100")
+            raise ValueError("Mark must be between 0 and 100.")
         
     @property
     def age(self):
@@ -52,7 +52,7 @@ class Student(ABC):
     @age.setter
     def age(self, new_age):
 
-        if not isinstance(new_age, int):
+        if isinstance(new_age, bool) or not isinstance(new_age, int):
             raise TypeError("Age must be an integer.")
 
         if 0 < new_age:
@@ -77,23 +77,22 @@ class Student(ABC):
         return self._mark >= 40
     
     def get_grade(self):
-        if 70 <= self._mark <= 100:
-            return "A" 
+        # Checking from the top down covers decimal marks such as 69.5,
+        # which fell between the old ranges (60-69 and 70-100).
+        # The mark setter already guarantees 0 <= mark <= 100.
+        if self._mark >= 70:
+            return "A"
 
-        elif 60 <= self._mark <= 69:
-            return "B" 
+        elif self._mark >= 60:
+            return "B"
 
-        elif 50 <= self._mark <= 59:
-            return "C" 
+        elif self._mark >= 50:
+            return "C"
 
-        elif 40 <= self._mark <= 49:
-            return "D" 
+        elif self._mark >= 40:
+            return "D"
 
-        elif 0 <= self._mark <= 39:
-            return "F"
-
-        else:
-            return "Invalid marks!" 
+        return "F" 
 
     def get_status(self):
         if 40 <= self._mark:
@@ -109,9 +108,6 @@ class Student(ABC):
 
     def to_dict(self):
         return {"name": self.name, "mark": self.mark, "age": self.age, "student_type": self.student_type, "course_name": self.course.course_name, "course_code": self.course.course_code}
-
-    def save_students(self, filename):
-        pass
 
     def display(self):
         print(f"Name: {self.name}")

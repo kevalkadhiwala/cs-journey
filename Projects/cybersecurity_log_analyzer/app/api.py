@@ -1,21 +1,38 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from Projects.cybersecurity_log_analyzer.database import DatabaseManager
-from Projects.cybersecurity_log_analyzer.log_analyzer import LogAnalyzer
+from fastapi.responses import FileResponse
 
-app = FastAPI()
+from app import config
+from app.database import DatabaseManager
+from app.log_analyzer import LogAnalyzer
 
+app = FastAPI(title="Cybersecurity Log Analyzer")
+
+# Only the listed origins may call the API from another page.
+# No cookies or auth headers are used, so credentials stay disabled,
+# and the API is read-only, so only GET is allowed.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=config.ALLOWED_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["GET"],
     allow_headers=["*"]
 )
 
+
+def get_database():
+    # config.DATABASE_PATH is read on every call so tests can point it
+    # at a temporary database. create_table() is safe to repeat
+    # (CREATE TABLE IF NOT EXISTS) and stops "no such table" errors
+    # when the API starts before any log has been ingested.
+    db = DatabaseManager(config.DATABASE_PATH)
+    db.create_table()
+    return db
+
+
 def get_analyzer():
 
-    db = DatabaseManager("security.db")
+    db = get_database()
 
     events = db.get_events()
 
@@ -26,6 +43,13 @@ def home():
     return {
         "message": "Cybersecurity Log Analyzer API is running!"
     }
+
+
+@app.get("/dashboard", include_in_schema=False)
+def dashboard():
+    # Serving the dashboard from the API means it shares the API's
+    # origin, so the browser needs no CORS exception at all.
+    return FileResponse(config.STATIC_DIR / "index.html")
 
 
 @app.get("/suspicious-ips")
@@ -71,7 +95,7 @@ def get_events(
     event_type: str | None = Query(default=None)
 ):
 
-    db = DatabaseManager("security.db")
+    db = get_database()
 
     if ip_address or event_type:
 
@@ -100,7 +124,7 @@ def get_events(
 @app.get("/statistics")
 def get_statistics():
 
-    db = DatabaseManager("security.db")
+    db = get_database()
 
     statistics = db.get_event_statistics()
 
@@ -121,4 +145,3 @@ def get_statistics():
         "successful_logins": successful_logins,
         "suspicious_ips": len(suspicious_ips)
     }
-

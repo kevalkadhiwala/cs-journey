@@ -1,0 +1,12 @@
+# Generated database (recreate with: python -m app.ingest)
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets (needed later for LLM API keys)
+.env

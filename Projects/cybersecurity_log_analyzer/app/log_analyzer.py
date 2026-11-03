@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from app.config import TIMESTAMP_FORMAT
+
 class LogAnalyzer:
 
     def __init__(self, events):
@@ -38,7 +40,7 @@ class LogAnalyzer:
         return usernames
 
     def parse_timestamp(self, timestamp):
-        return datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+        return datetime.strptime(timestamp, TIMESTAMP_FORMAT)
 
     def detect_brute_force(self, ip_address, max_seconds=60, threshold=3):
 

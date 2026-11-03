@@ -1,24 +1,27 @@
 # Keval Kadhiwala
 
 Computer Science student at Dublin City University
-interested in software development, cybersecurity ,and backend systems.
+interested in software development, cybersecurity and backend systems.
 
 ## Featured Projects
 
 ### Cybersecurity Log Analyzer
-Python | FastAPI | SQLite | SQL | JavaScript
+Python | FastAPI | SQLite | SQL | JavaScript | pytest
 
 Security monitoring application that analyses authentication
 logs, detects suspicious login behaviour, calculates risk scores,
 and exposes the results through a REST API and web dashboard.
+Uses parameterised SQL, XSS-safe output and restricted CORS,
+with 33 automated tests.
 
 [View Project →](./Projects/cybersecurity_log_analyzer)
 
 ### Student Grade Manager
-Python | OOP | JSON
+Python | OOP | JSON | pytest
 
 CLI application demonstrating object-oriented programming,
-data persistence, validation and student statistics.
+data persistence, validation and student statistics,
+with 17 automated tests.
 
 [View Project →](./Projects/StudentGradeManager)
 
@@ -32,7 +35,8 @@ SQLite ·
 FastAPI ·
 JavaScript ·
 HTML/CSS ·
-Git/GitHub ·
+pytest ·
+Git/GitHub
 
 ## Education
 

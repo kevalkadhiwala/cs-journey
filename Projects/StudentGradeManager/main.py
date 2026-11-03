@@ -2,9 +2,21 @@
 # MAIN PROGRAM
 # ============================================================
 
+from pathlib import Path
+
+from course import Course
+from manager import StudentManager
+from menu import (display_menu, get_menu_choice, get_student_type,
+                  get_valid_age, get_valid_mark)
+from student import BusinessStudent, ComputerScienceStudent
+
+# One constant for loading AND saving, stored next to this file,
+# so the program finds its data whichever folder you run it from.
+DATA_FILE = Path(__file__).resolve().parent / "students.json"
+
 manager = StudentManager()
 
-manager.load_students("student.json")
+manager.load_students(DATA_FILE)
 
 while True:
     display_menu()
@@ -18,7 +30,7 @@ while True:
 
         if save_choice == "y":
 
-            manager.save_students("students.json")
+            manager.save_students(DATA_FILE)
 
         print("Goodbye!")
 
@@ -101,4 +113,4 @@ while True:
         manager.display_summary()
 
     elif choice == "8":
-        manager.save_students("students.json")
+        manager.save_students(DATA_FILE)

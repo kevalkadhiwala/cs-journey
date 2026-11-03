@@ -1,9 +1,10 @@
 import sqlite3
-from Projects.cybersecurity_log_analyzer.log_event import LogEvent
+from app.log_event import LogEvent
 
 class DatabaseManager:
 
     def __init__(self, database_name):
+        # Accepts a string or a pathlib.Path
         self.database_name = database_name
 
     def connect(self):
