@@ -2,6 +2,20 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.venv/
+venv/
 
-# Local scratch output (zips/notes, not part of the projects)
+# Secrets
+.env
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime data created by the apps
+Projects/student-grade-manager/students.json
+*.db
+
+# Local scratch output
 Claude outputs/

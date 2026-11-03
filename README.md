@@ -1,5 +1,7 @@
 # Keval Kadhiwala
 
+[![tests](https://github.com/kevalkadhiwala/cs-journey/actions/workflows/tests.yml/badge.svg)](https://github.com/kevalkadhiwala/cs-journey/actions/workflows/tests.yml)
+
 Computer Science student at Dublin City University
 interested in software development, cybersecurity and backend systems.
 
@@ -14,7 +16,7 @@ and exposes the results through a REST API and web dashboard.
 Uses parameterised SQL, XSS-safe output and restricted CORS,
 with 33 automated tests.
 
-[View Project →](./Projects/cybersecurity_log_analyzer)
+[View Project →](./Projects/cybersecurity-log-analyzer)
 
 ### Student Grade Manager
 Python | OOP | JSON | pytest
@@ -23,7 +25,7 @@ CLI application demonstrating object-oriented programming,
 data persistence, validation and student statistics,
 with 17 automated tests.
 
-[View Project →](./Projects/StudentGradeManager)
+[View Project →](./Projects/student-grade-manager)
 
 ## Technical Skills
 

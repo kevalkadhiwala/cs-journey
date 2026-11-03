@@ -1,4 +1,4 @@
-# Student Management System
+# Student Grade Manager
 
 A command-line Python application for managing student records,
 built to practise object-oriented programming.
@@ -44,7 +44,6 @@ python -m pytest
 - Decimal marks (e.g. 69.5) now receive the correct grade
 - `True`/`False` are rejected as marks or ages
 - Moved the student classes into the project as `student.py`
-- Moved early file-handling practice scripts into `practice/`
 - Added 17 pytest tests
 
 ## Project Structure
@@ -56,6 +55,5 @@ student.py        Student base class and the two student types
 course.py         Course class
 manager.py        StudentManager: storage, search, JSON save/load
 test_students.py  pytest tests
-students.json     Saved student data
-practice/         Early file-handling practice scripts
+students.json     Saved student data (created on first save)
 ```
