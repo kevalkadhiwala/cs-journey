@@ -57,3 +57,67 @@ def test_load_missing_file_starts_empty(tmp_path, capsys):
     manager = StudentManager()
     assert manager.load_students(tmp_path / "nope.json") == []
     assert "File does not exist!" in capsys.readouterr().out
+
+
+# ------------------------------------------------------------
+# SQLite storage
+# ------------------------------------------------------------
+
+def test_database_round_trip_keeps_both_student_types(tmp_path, capsys):
+    db_file = tmp_path / "students.db"
+
+    manager = StudentManager()
+    manager.add_student(make_cs(mark=69.5))
+    manager.add_student(BusinessStudent("Tom", 55, 22, "Marketing",
+                                        Course("Business", "BS200")))
+    manager.save_to_database(db_file)
+
+    reloaded = StudentManager()
+    reloaded.load_from_database(db_file)
+
+    aisha = reloaded.find_student("Aisha")
+    tom = reloaded.find_student("Tom")
+    assert reloaded.student_count() == 2
+    assert aisha.programming_language == "Python"
+    assert aisha.mark == 69.5 and aisha.get_grade() == "B"
+    assert tom.specialisation == "Marketing"
+    assert tom.mark == 55 and isinstance(tom.mark, int)
+    assert tom.course.course_code == "BS200"
+
+
+def test_saving_again_replaces_old_rows(tmp_path, capsys):
+    db_file = tmp_path / "students.db"
+
+    manager = StudentManager()
+    manager.add_student(make_cs())
+    manager.save_to_database(db_file)
+
+    manager.remove_student(manager.find_student("Aisha"))
+    manager.add_student(make_cs(name="Ben"))
+    manager.save_to_database(db_file)
+
+    reloaded = StudentManager()
+    reloaded.load_from_database(db_file)
+    assert [s.name for s in reloaded.students] == ["Ben"]
+
+
+def test_new_database_starts_empty(tmp_path):
+    manager = StudentManager()
+    assert manager.load_from_database(tmp_path / "new.db") == []
+
+
+def test_json_data_can_be_moved_into_database(tmp_path, capsys):
+    json_file = tmp_path / "students.json"
+    db_file = tmp_path / "students.db"
+
+    manager = StudentManager()
+    manager.add_student(make_cs())
+    manager.save_students(json_file)
+
+    migrated = StudentManager()
+    migrated.load_students(json_file)
+    migrated.save_to_database(db_file)
+
+    reloaded = StudentManager()
+    reloaded.load_from_database(db_file)
+    assert reloaded.find_student("Aisha").programming_language == "Python"

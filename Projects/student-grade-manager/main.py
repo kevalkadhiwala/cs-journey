@@ -10,13 +10,21 @@ from menu import (display_menu, get_menu_choice, get_student_type,
                   get_valid_age, get_valid_mark)
 from student import BusinessStudent, ComputerScienceStudent
 
-# One constant for loading AND saving, stored next to this file,
-# so the program finds its data whichever folder you run it from.
-DATA_FILE = Path(__file__).resolve().parent / "students.json"
+# Data lives next to this file, so the program finds it
+# whichever folder you run it from.
+PROJECT_DIR = Path(__file__).resolve().parent
+DATA_FILE = PROJECT_DIR / "students.db"
+OLD_JSON_FILE = PROJECT_DIR / "students.json"
 
 manager = StudentManager()
 
-manager.load_students(DATA_FILE)
+# One-time move from the old JSON file to the database
+if not DATA_FILE.exists() and OLD_JSON_FILE.exists():
+    manager.load_students(OLD_JSON_FILE)
+    manager.save_to_database(DATA_FILE)
+    print(f"Imported {manager.student_count()} students from students.json")
+
+manager.load_from_database(DATA_FILE)
 
 while True:
     display_menu()
@@ -30,7 +38,7 @@ while True:
 
         if save_choice == "y":
 
-            manager.save_students(DATA_FILE)
+            manager.save_to_database(DATA_FILE)
 
         print("Goodbye!")
 
@@ -113,4 +121,4 @@ while True:
         manager.display_summary()
 
     elif choice == "8":
-        manager.save_students(DATA_FILE)
+        manager.save_to_database(DATA_FILE)

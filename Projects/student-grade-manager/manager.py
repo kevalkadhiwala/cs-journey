@@ -1,6 +1,7 @@
 import json
 
 from course import Course
+from database import StudentDatabase
 from student import BusinessStudent, ComputerScienceStudent
 
 
@@ -99,8 +100,25 @@ class StudentManager:
             self.students = []
             return[]
 
+        self.students = self._build_students(data)
+
+        return self.students
+
+    def save_to_database(self, database_name):
+        database = StudentDatabase(database_name)
+        database.save_all([student.to_dict() for student in self.students])
+
+    def load_from_database(self, database_name):
+        database = StudentDatabase(database_name)
+        self.students = self._build_students(database.load_all())
+
+        return self.students
+
+    def _build_students(self, records):
+        # Turns saved records (from JSON or the database) back into
+        # student objects. Shared by both loaders.
         loaded_students = []
-        for student_data in data:
+        for student_data in records:
             try:
 
                 if student_data["student_type"] == "Computer Science":
@@ -132,10 +150,8 @@ class StudentManager:
                 loaded_students.append(student)
 
             except KeyError as error:
-                print(f"Missing data in JSON: {error}."
+                print(f"Missing data: {error}. "
                       f"Skipping student.")
-
-        self.students = loaded_students
 
         return loaded_students
 

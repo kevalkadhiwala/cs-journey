@@ -9,7 +9,7 @@ built to practise object-oriented programming.
 - Inheritance (`ComputerScienceStudent`, `BusinessStudent`)
 - Polymorphism (`display()`, `to_dict()` overridden per student type)
 - Encapsulation (validated properties for name, mark and age)
-- JSON persistence
+- SQLite persistence (JSON still supported for import)
 - Error handling and input validation
 
 ## Features
@@ -19,7 +19,8 @@ built to practise object-oriented programming.
 - Grades A-F and pass/fail status
 - Find students by course
 - Summary statistics by student type
-- Save to and load from `students.json`
+- Save to and load from a SQLite database (`students.db`)
+- Existing `students.json` data is imported automatically on first run
 
 ## Quick Start
 
@@ -27,7 +28,7 @@ built to practise object-oriented programming.
 python main.py
 ```
 
-No external packages are needed to run the app. The data file is always
+No external packages are needed to run the app (SQLite is built into Python). The data file is always
 read from and saved to the project folder, whichever folder you run it from.
 
 ## Running the Tests
@@ -53,7 +54,8 @@ main.py           Menu loop (program entry point)
 menu.py           Menu display and validated input helpers
 student.py        Student base class and the two student types
 course.py         Course class
-manager.py        StudentManager: storage, search, JSON save/load
+manager.py        StudentManager: storage, search, save/load
+database.py       SQLite storage (StudentDatabase)
 test_students.py  pytest tests
-students.json     Saved student data (created on first save)
+students.db       Saved student data (created on first run)
 ```

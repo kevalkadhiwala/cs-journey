@@ -19,11 +19,11 @@ with 33 automated tests.
 [View Project →](./Projects/cybersecurity-log-analyzer)
 
 ### Student Grade Manager
-Python | OOP | JSON | pytest
+Python | OOP | SQLite | pytest
 
 CLI application demonstrating object-oriented programming,
 data persistence, validation and student statistics,
-with 17 automated tests.
+with 21 automated tests.
 
 [View Project →](./Projects/student-grade-manager)
 
