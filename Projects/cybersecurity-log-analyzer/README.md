@@ -24,6 +24,7 @@ results through a FastAPI REST API and web dashboard.
 - Brute-force detection
 - Detection of successful logins following repeated failures
 - Targeted username analysis
+- Distributed attack detection (one account attacked from many IPs)
 - Risk scoring
 - Risk-level classification
 - REST API
@@ -111,6 +112,11 @@ The analyzer evaluates suspicious IP addresses using:
 - Number of targeted usernames
 - Successful login following repeated failures
 
+It also looks at each account, not just each IP. Attackers often spread
+attempts across many IPs so no single IP crosses the limit. An account
+with failed logins from 3 or more different IPs within 10 minutes is
+flagged as a **distributed attack**.
+
 These factors contribute to a risk score and classification:
 
 - LOW
@@ -126,6 +132,7 @@ These factors contribute to a risk score and classification:
 | `/statistics` | Security event statistics |
 | `/suspicious-ips` | Suspicious IP analysis |
 | `/high-risk` | High-risk IPs |
+| `/targeted-accounts` | Accounts attacked from many IPs |
 | `/events` | Recent and filtered security events |
 
 ## Example

@@ -33,7 +33,7 @@ def test_ingest_skips_bad_lines_without_crashing(tmp_path):
 def test_sample_log_ingests_fully(tmp_path):
     db = DatabaseManager(tmp_path / "t.db")
     db.create_table()
-    assert ingest_file(db, DEFAULT_LOG_PATH) == (11, 0)
+    assert ingest_file(db, DEFAULT_LOG_PATH) == (14, 0)
 
 
 def test_main_runs_from_any_folder(tmp_path, monkeypatch, capsys):
@@ -41,6 +41,7 @@ def test_main_runs_from_any_folder(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     main(["--db", str(tmp_path / "cli.db")])
     output = capsys.readouterr().out
-    assert "Read 11 events" in output
+    assert "Read 14 events" in output
     assert "Suspicious IP: 192.168.1.99" in output
     assert "Risk level: HIGH" in output
+    assert "Targeted account: root" in output

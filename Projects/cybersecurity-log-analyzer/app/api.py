@@ -89,6 +89,21 @@ def high_risk_ips():
         "high_risk_ips": high_risk
     }
 
+@app.get("/targeted-accounts")
+def targeted_accounts():
+
+    analyzer = get_analyzer()
+
+    reports = []
+
+    for username in analyzer.find_targeted_accounts():
+        reports.append(analyzer.analyze_account(username))
+
+    return {
+        "count": len(reports),
+        "targeted_accounts": reports
+    }
+
 @app.get("/events")
 def get_events(
     ip_address: str | None = Query(default=None),
@@ -139,9 +154,12 @@ def get_statistics():
 
     suspicious_ips = analyzer.detect_suspicious_ips()
 
+    targeted_accounts = analyzer.find_targeted_accounts()
+
     return {
         "total_events": total_events,
         "failed_logins": failed_logins,
         "successful_logins": successful_logins,
-        "suspicious_ips": len(suspicious_ips)
+        "suspicious_ips": len(suspicious_ips),
+        "targeted_accounts": len(targeted_accounts)
     }

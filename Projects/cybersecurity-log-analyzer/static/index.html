@@ -150,6 +150,11 @@
             <p id="suspicious-ips">Loading...</p>
         </div>
 
+        <div class="card">
+            <h2>Targeted Accounts</h2>
+            <p id="targeted-accounts">Loading...</p>
+        </div>
+
     </div>
 
     <div id="high-risk-alert">
@@ -195,6 +200,28 @@
         <tbody id="suspicious-table-body">
             <tr>
                 <td colspan="7">Loading...</td>
+            </tr>
+        </tbody>
+
+    </table>
+
+    <h2>🎯 Targeted Accounts</h2>
+
+    <p>Accounts attacked from 3 or more different IPs within 10 minutes.</p>
+
+    <table id="targeted-table">
+
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Failed Attempts</th>
+                <th>Attacking IPs</th>
+            </tr>
+        </thead>
+
+        <tbody id="targeted-table-body">
+            <tr>
+                <td colspan="3">Loading...</td>
             </tr>
         </tbody>
 
@@ -253,6 +280,42 @@
 
             document.getElementById("suspicious-ips").textContent =
                 data.suspicious_ips;
+
+            document.getElementById("targeted-accounts").textContent =
+                data.targeted_accounts;
+        }
+
+        async function loadTargetedAccounts() {
+
+            const response = await fetch(
+                "/targeted-accounts"
+            );
+
+            const data = await response.json();
+
+            const tableBody =
+                document.getElementById("targeted-table-body");
+
+            tableBody.innerHTML = "";
+
+            if (data.count === 0) {
+                tableBody.innerHTML =
+                    `<tr><td colspan="3">No targeted accounts detected.</td></tr>`;
+                return;
+            }
+
+            for (const account of data.targeted_accounts) {
+
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td class="warning">${escapeHtml(account.username)}</td>
+                    <td>${escapeHtml(account.failed_attempts)}</td>
+                    <td>${escapeHtml(account.attacking_ips.join(", "))}</td>
+                `;
+
+                tableBody.appendChild(row);
+            }
         }
 
         async function loadSuspiciousIPs() {
@@ -391,6 +454,7 @@
         loadStatistics();
         loadSuspiciousIPs();
         loadHighRisk();
+        loadTargetedAccounts();
         loadEvents();
 
     </script>

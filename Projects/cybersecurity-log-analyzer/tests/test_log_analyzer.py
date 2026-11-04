@@ -4,7 +4,8 @@ from tests.conftest import make_events
 
 def test_counts_failed_logins_per_ip(sample_events):
     counts = LogAnalyzer(sample_events).count_failed_logins()
-    assert counts == {"192.168.1.99": 4, "192.168.1.77": 3}
+    assert counts == {"192.168.1.99": 4, "192.168.1.77": 3,
+                      "203.0.113.10": 1, "203.0.113.11": 1, "203.0.113.12": 1}
 
 
 def test_suspicious_ips_use_threshold(sample_events):
@@ -87,3 +88,69 @@ def test_empty_log_produces_no_findings():
     analyzer = LogAnalyzer([])
     assert analyzer.detect_suspicious_ips() == []
     assert analyzer.calculate_risk("1.2.3.4") == (0, "LOW")
+
+
+# ------------------------------------------------------------
+# Distributed attacks: many IPs against one account
+# ------------------------------------------------------------
+
+def test_distributed_attack_detected_in_sample(sample_events):
+    analyzer = LogAnalyzer(sample_events)
+    assert analyzer.detect_distributed_attack("root") is True
+    # admin and keval were only attacked from one IP
+    assert analyzer.detect_distributed_attack("admin") is False
+    assert analyzer.find_targeted_accounts() == ["root"]
+
+
+def test_distributed_attack_needs_ips_close_together():
+    events = make_events([
+        ("2026-08-18 09:00:00", "10.0.0.1", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:30:00", "10.0.0.2", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 10:00:00", "10.0.0.3", "LOGIN_FAILED", "admin"),
+    ])
+    assert LogAnalyzer(events).detect_distributed_attack("admin") is False
+
+
+def test_one_ip_failing_many_times_is_not_distributed():
+    events = make_events([
+        ("2026-08-18 09:00:00", "10.0.0.1", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:00:05", "10.0.0.1", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:00:10", "10.0.0.1", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:00:15", "10.0.0.1", "LOGIN_FAILED", "admin"),
+    ])
+    assert LogAnalyzer(events).detect_distributed_attack("admin") is False
+
+
+def test_distributed_attack_finds_window_later_in_log():
+    # The first IP is too early, but the last three fit inside 10 minutes
+    events = make_events([
+        ("2026-08-18 08:00:00", "10.0.0.9", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:00:00", "10.0.0.1", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:04:00", "10.0.0.2", "LOGIN_FAILED", "admin"),
+        ("2026-08-18 09:09:00", "10.0.0.3", "LOGIN_FAILED", "admin"),
+    ])
+    assert LogAnalyzer(events).detect_distributed_attack("admin") is True
+
+
+def test_successful_logins_do_not_count_as_attacks():
+    events = make_events([
+        ("2026-08-18 09:00:00", "10.0.0.1", "LOGIN_SUCCESS", "admin"),
+        ("2026-08-18 09:01:00", "10.0.0.2", "LOGIN_SUCCESS", "admin"),
+        ("2026-08-18 09:02:00", "10.0.0.3", "LOGIN_SUCCESS", "admin"),
+    ])
+    analyzer = LogAnalyzer(events)
+    assert analyzer.detect_distributed_attack("admin") is False
+    assert analyzer.find_targeted_accounts() == []
+
+
+def test_analyze_account_report(sample_events):
+    assert LogAnalyzer(sample_events).analyze_account("root") == {
+        "username": "root",
+        "failed_attempts": 3,
+        "attacking_ips": ["203.0.113.10", "203.0.113.11", "203.0.113.12"],
+        "distributed_attack": True,
+    }
+
+
+def test_empty_log_has_no_targeted_accounts():
+    assert LogAnalyzer([]).find_targeted_accounts() == []

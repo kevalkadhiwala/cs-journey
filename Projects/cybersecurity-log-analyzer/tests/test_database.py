@@ -33,10 +33,10 @@ def test_filter_input_is_not_injected_into_sql(loaded_db):
 
 def test_statistics(loaded_db):
     assert loaded_db.get_event_statistics() == {
-        "LOGIN_SUCCESS": 3, "LOGIN_FAILED": 7, "LOGOUT": 1
+        "LOGIN_SUCCESS": 3, "LOGIN_FAILED": 10, "LOGOUT": 1
     }
 
 
 def test_recent_events_newest_first(loaded_db):
     recent = loaded_db.get_recent_events(limit=2)
-    assert [e.timestamp for e in recent] == ["2026-08-18 11:15:00", "2026-08-18 11:00:00"]
+    assert [e.timestamp for e in recent] == ["2026-08-18 11:23:00", "2026-08-18 11:21:30"]

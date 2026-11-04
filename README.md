@@ -11,10 +11,11 @@ interested in software development, cybersecurity and backend systems.
 Python | FastAPI | SQLite | SQL | JavaScript | pytest
 
 Security monitoring application that analyses authentication
-logs, detects suspicious login behaviour, calculates risk scores,
-and exposes the results through a REST API and web dashboard.
+logs, detects suspicious login behaviour and distributed attacks,
+calculates risk scores, and exposes the results through a REST API
+and web dashboard.
 Uses parameterised SQL, XSS-safe output and restricted CORS,
-with 33 automated tests.
+with 41 automated tests.
 
 [View Project →](./Projects/cybersecurity-log-analyzer)
 

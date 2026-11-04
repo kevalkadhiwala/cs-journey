@@ -90,6 +90,82 @@ class LogAnalyzer:
                 failed_count = 0
         return False
 
+    def get_attacking_ips(self, username):
+        ips = []
+
+        for event in self.events:
+            if event.username == username and event.event_type == "LOGIN_FAILED":
+                if event.ip_address not in ips:
+                    ips.append(event.ip_address)
+
+        return ips
+
+    def detect_distributed_attack(self, username, max_seconds=600, threshold=3):
+        # Per-IP rules miss attackers who spread attempts across many IPs,
+        # keeping each IP under the limit. This rule looks at one account:
+        # failures from `threshold` or more DIFFERENT IPs inside the window.
+
+        failed_events = []
+
+        for event in self.events:
+            if event.username == username and event.event_type == "LOGIN_FAILED":
+                failed_events.append(event)
+
+        failed_events.sort(key=lambda event: self.parse_timestamp(event.timestamp))
+
+        for i in range(len(failed_events)):
+
+            window_start = self.parse_timestamp(failed_events[i].timestamp)
+
+            # A set counts each IP once, however many times it failed
+            ips_in_window = set()
+
+            for event in failed_events[i:]:
+
+                time_difference = (
+                    self.parse_timestamp(event.timestamp) - window_start
+                ).total_seconds()
+
+                if time_difference > max_seconds:
+                    break
+
+                ips_in_window.add(event.ip_address)
+
+            if len(ips_in_window) >= threshold:
+                return True
+
+        return False
+
+    def find_targeted_accounts(self):
+        usernames = []
+
+        for event in self.events:
+            if event.event_type == "LOGIN_FAILED" and event.username not in usernames:
+                usernames.append(event.username)
+
+        targeted = []
+
+        for username in usernames:
+            if self.detect_distributed_attack(username):
+                targeted.append(username)
+
+        return targeted
+
+    def analyze_account(self, username):
+
+        failed_attempts = 0
+
+        for event in self.events:
+            if event.username == username and event.event_type == "LOGIN_FAILED":
+                failed_attempts += 1
+
+        return {
+            "username": username,
+            "failed_attempts": failed_attempts,
+            "attacking_ips": self.get_attacking_ips(username),
+            "distributed_attack": self.detect_distributed_attack(username)
+        }
+
     def calculate_risk(self, ip_address):
 
         failed_logins = self.count_failed_logins()

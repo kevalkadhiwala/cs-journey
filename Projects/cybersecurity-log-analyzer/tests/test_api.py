@@ -21,8 +21,9 @@ def test_home(client):
 
 def test_statistics(client):
     assert client.get("/statistics").json() == {
-        "total_events": 11, "failed_logins": 7,
+        "total_events": 14, "failed_logins": 10,
         "successful_logins": 3, "suspicious_ips": 2,
+        "targeted_accounts": 1,
     }
 
 
@@ -35,6 +36,13 @@ def test_high_risk(client):
     data = client.get("/high-risk").json()
     assert data["count"] == 1
     assert data["high_risk_ips"][0]["ip_address"] == "192.168.1.99"
+
+
+def test_targeted_accounts(client):
+    data = client.get("/targeted-accounts").json()
+    assert data["count"] == 1
+    assert data["targeted_accounts"][0]["username"] == "root"
+    assert len(data["targeted_accounts"][0]["attacking_ips"]) == 3
 
 
 def test_events_filter(client):

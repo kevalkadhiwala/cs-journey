@@ -72,6 +72,14 @@ def print_report(analyzer):
         print(f"Risk score: {report['risk_score']}")
         print(f"Risk level: {report['risk_level']}")
 
+    for username in analyzer.find_targeted_accounts():
+
+        report = analyzer.analyze_account(username)
+
+        print(f"\nTargeted account: {report['username']}")
+        print(f"Failed attempts: {report['failed_attempts']}")
+        print(f"Attacking IPs: {report['attacking_ips']}")
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(

@@ -21,6 +21,10 @@ SAMPLE_ROWS = [
     ("2026-08-18 10:30:00", "192.168.1.77", "LOGIN_FAILED", "unknown"),
     ("2026-08-18 11:00:00", "192.168.1.50", "LOGIN_SUCCESS", "keval"),
     ("2026-08-18 11:15:00", "192.168.1.50", "LOGOUT", "keval"),
+    # Distributed attack: one failure each from 3 IPs against "root"
+    ("2026-08-18 11:20:00", "203.0.113.10", "LOGIN_FAILED", "root"),
+    ("2026-08-18 11:21:30", "203.0.113.11", "LOGIN_FAILED", "root"),
+    ("2026-08-18 11:23:00", "203.0.113.12", "LOGIN_FAILED", "root"),
 ]
 
 
