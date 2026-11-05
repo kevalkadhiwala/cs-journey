@@ -104,3 +104,17 @@ def test_cors_rejects_unknown_origins(client):
 def test_cors_allows_configured_origin(client):
     response = client.get("/statistics", headers={"Origin": "http://localhost:8000"})
     assert response.headers["access-control-allow-origin"] == "http://localhost:8000"
+
+
+def test_incident_report_without_ai(client, monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "off")
+    report = client.get("/incident-report/192.168.1.99").json()
+
+    assert report["source"] == "rules"
+    assert report["risk_level"] == "HIGH"
+    assert report["mitre_technique"] == "T1078"
+
+
+def test_incident_report_unknown_ip(client):
+    response = client.get("/incident-report/10.0.0.1")
+    assert response.status_code == 404

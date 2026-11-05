@@ -29,3 +29,25 @@ ALLOWED_ORIGINS = [
 ]
 
 TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def load_env_file(path=BASE_DIR / ".env"):
+    """Read KEY=value lines from .env into the environment.
+
+    Values already set in the real environment win, and a missing
+    file is fine, so the app works the same with or without one.
+    """
+    if not path.exists():
+        return
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_env_file()

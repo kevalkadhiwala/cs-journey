@@ -9,6 +9,8 @@ results through a FastAPI REST API and web dashboard.
 
 - Python
 - SQLite
+- Pydantic
+- Ollama / OpenAI-compatible LLMs (optional)
 - FastAPI
 - SQL
 - JavaScript
@@ -33,6 +35,7 @@ results through a FastAPI REST API and web dashboard.
 - IP, event-type and date-range filtering
 - Paginated event browsing
 - Web-based security dashboard
+- Optional AI incident reports, validated and with a rule-based fallback
 
 ## Quick Start
 
@@ -62,6 +65,40 @@ Log format, one event per line:
 
 Malformed lines are skipped with a warning instead of crashing the import.
 
+## AI Incident Reports (optional)
+
+`GET /incident-report/{ip}` turns the detector's findings for a
+suspicious IP into a short incident report: a summary, the attack type,
+its MITRE ATT&CK technique, a timeline and recommended actions.
+
+The AI is a helper, not the decision maker:
+
+- **Off by default.** With `LLM_PROVIDER=off` the same report is built
+  from templates, so the whole app works without any model.
+- **Rules own the facts.** Whether an IP is suspicious, its risk score
+  and its timeline always come from the detection rules. The model only
+  writes the summary, picks the attack type and suggests actions.
+- **Every answer is validated** with a Pydantic schema: the attack type
+  must be one of three allowed values, the ATT&CK technique must match
+  it, and there must be 1-5 actions. The model also may not claim an
+  account was compromised unless the rules saw a successful login after
+  failures.
+- **Retry, then fall back.** An invalid answer is retried once with the
+  error explained. If it fails again, or the model cannot be reached,
+  the rule-based report is returned with a `fallback_reason`.
+- **Swappable provider.** Ollama (free, runs locally) or any
+  OpenAI-compatible API, chosen in `.env` without code changes.
+- **Tested without a network.** The tests use a fake model to check
+  valid answers, retries, bad fields, made-up claims and outages.
+
+To try it with a local model:
+
+```bash
+# Install Ollama from https://ollama.com, then:
+ollama pull llama3.2
+cp .env.example .env      # then set LLM_PROVIDER=ollama
+```
+
 ## Running the Tests
 
 ```bash
@@ -69,7 +106,7 @@ python -m pytest
 ```
 
 The tests cover every detection rule, risk scoring, the database layer,
-log ingestion and the API endpoints.
+log ingestion, the API endpoints and the AI report validation (69 tests).
 
 ## Project Structure
 
@@ -81,6 +118,8 @@ app/
   database.py      SQLite storage and queries (parameterised SQL)
   log_analyzer.py  Detection rules and risk scoring
   api.py           FastAPI REST API, also serves the dashboard
+  llm.py           Swappable LLM providers (off / Ollama / OpenAI-compatible)
+  incident_report.py  AI incident reports: schema, validation, fallback
 static/index.html  Web dashboard
 data/security.log  Example security log
 tests/             pytest test suite
@@ -134,6 +173,7 @@ These factors contribute to a risk score and classification:
 | `/suspicious-ips` | Suspicious IP analysis |
 | `/high-risk` | High-risk IPs |
 | `/targeted-accounts` | Accounts attacked from many IPs |
+| `/incident-report/{ip}` | Incident report for a suspicious IP (AI or rules) |
 | `/events` | Security events, newest first, with filters and paging |
 
 ### Filtering and paging `/events`

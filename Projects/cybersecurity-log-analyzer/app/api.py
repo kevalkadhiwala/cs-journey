@@ -6,6 +6,8 @@ from fastapi.responses import FileResponse
 
 from app import config
 from app.database import DatabaseManager
+from app.incident_report import generate_incident_report
+from app.llm import LLMError, get_llm
 from app.log_analyzer import LogAnalyzer
 
 app = FastAPI(title="Cybersecurity Log Analyzer")
@@ -105,6 +107,24 @@ def targeted_accounts():
         "count": len(reports),
         "targeted_accounts": reports
     }
+
+@app.get("/incident-report/{ip_address}")
+def incident_report(ip_address: str):
+    # Optional AI feature: with LLM_PROVIDER=off (the default), or if the
+    # model fails, the report is written by rules instead.
+    analyzer = get_analyzer()
+
+    if ip_address not in analyzer.detect_suspicious_ips():
+        raise HTTPException(status_code=404,
+                            detail=f"{ip_address} is not a suspicious IP")
+
+    try:
+        llm = get_llm()
+    except LLMError:
+        llm = None   # bad settings should not break the endpoint
+
+    return generate_incident_report(analyzer, ip_address, llm).model_dump()
+
 
 def parse_date_filter(value, name, end_of_day=False):
     # Accepts "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS" and returns the
