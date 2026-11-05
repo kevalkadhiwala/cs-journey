@@ -201,3 +201,119 @@ def test_cli_rejects_invalid_marks(tmp_path, bad_mark, capsys):
     with pytest.raises(SystemExit) as error:
         run(tmp_path / "cli.db", "update-mark", "Aisha", bad_mark)
     assert error.value.code == 2
+
+
+# ---------------- subject results and seed data ----------------
+
+from database import StudentDatabase  # noqa: E402
+from seed import generate  # noqa: E402
+
+
+def run_cli(db_file, *args):
+    return main(["--db", str(db_file), *args])
+
+
+@pytest.fixture
+def results_db(tmp_path, capsys):
+    db_file = tmp_path / "results.db"
+    run_cli(db_file, "add", "--type", "cs", "--name", "Aisha", "--mark", "72",
+            "--age", "20", "--course-name", "BSc CS", "--course-code", "CS101",
+            "--language", "Python")
+    run_cli(db_file, "add", "--type", "cs", "--name", "Liam", "--mark", "48",
+            "--age", "21", "--course-name", "BSc CS", "--course-code", "CS101",
+            "--language", "Java")
+
+    database = StudentDatabase(db_file)
+    database.set_subject_mark("Aisha", "Databases", "2026-S1", 80)
+    database.set_subject_mark("Liam", "Databases", "2026-S1", 35)
+    database.set_subject_mark("Liam", "Databases", "2025-S2", 50)
+    capsys.readouterr()
+    return db_file
+
+
+def test_same_subject_and_term_replaces_the_mark(results_db):
+    database = StudentDatabase(results_db)
+    database.set_subject_mark("Aisha", "Databases", "2026-S1", 64)
+
+    assert database.get_subject_marks("Aisha") == [
+        {"subject": "Databases", "term": "2026-S1", "mark": 64}
+    ]
+
+
+def test_subject_average_overall_and_by_term(results_db):
+    database = StudentDatabase(results_db)
+
+    assert database.subject_average("Databases") == (55.0, 3)
+    assert database.subject_average("Databases", "2026-S1") == (57.5, 2)
+    assert database.subject_average("Networks") == (None, 0)
+
+
+def test_students_below_a_mark(results_db):
+    rows = StudentDatabase(results_db).students_below("Databases", 60)
+
+    assert [(r["student_name"], r["term"]) for r in rows] == [
+        ("Liam", "2026-S1"), ("Liam", "2025-S2")
+    ]
+
+
+def test_removing_a_student_removes_their_results(results_db, capsys):
+    run_cli(results_db, "remove", "Liam")
+
+    database = StudentDatabase(results_db)
+    assert database.get_subject_marks("Liam") == []
+    assert database.subject_average("Databases") == (80.0, 1)
+
+
+def test_cli_add_result_normalises_subject_and_term(results_db, capsys):
+    assert run_cli(results_db, "add-result", "Aisha", "networks", "2026-s1", "66") == 0
+
+    marks = StudentDatabase(results_db).get_subject_marks("Aisha")
+    assert {"subject": "Networks", "term": "2026-S1", "mark": 66} in marks
+
+
+def test_cli_add_result_needs_a_known_student(results_db, capsys):
+    assert run_cli(results_db, "add-result", "Nobody", "Maths", "2026-S1", "50") == 1
+    assert "Student not found!" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("bad_term", ["2026", "2026-S3", "S1-2026"])
+def test_cli_rejects_bad_terms(results_db, bad_term, capsys):
+    with pytest.raises(SystemExit) as error:
+        run_cli(results_db, "add-result", "Aisha", "Maths", bad_term, "50")
+    assert error.value.code == 2
+
+
+def test_cli_results_and_queries(results_db, capsys):
+    run_cli(results_db, "results", "Liam")
+    out = capsys.readouterr().out
+    assert "2025-S2  (average 50.0)" in out
+    assert "2026-S1  (average 35.0)" in out
+
+    run_cli(results_db, "subject-average", "databases", "--term", "2026-S1")
+    assert "Databases average in 2026-S1: 57.5 (2 marks)" in capsys.readouterr().out
+
+    run_cli(results_db, "below", "Databases", "40")
+    assert "Liam" in capsys.readouterr().out
+
+    assert run_cli(results_db, "subject-average", "Art") == 1
+
+
+def test_seed_data_is_repeatable_and_valid():
+    students, results = generate(count=10, random_seed=7)
+    again, _ = generate(count=10, random_seed=7)
+
+    assert [s.name for s in students] == [s.name for s in again]
+    assert len({s.name for s in students}) == 10
+    # 4 subjects x 3 terms for every student
+    assert len(results) == 120
+    assert all(0 <= mark <= 100 for *_, mark in results)
+
+
+def test_cli_seed_fills_only_an_empty_database(tmp_path, capsys):
+    db_file = tmp_path / "seed.db"
+
+    assert run_cli(db_file, "seed", "--count", "5") == 0
+    assert "Created 5 students with 60 subject results." in capsys.readouterr().out
+
+    assert run_cli(db_file, "seed") == 1
+    assert "already has students" in capsys.readouterr().out

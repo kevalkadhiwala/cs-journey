@@ -22,6 +22,9 @@ built to practise object-oriented programming.
 - Save to and load from a SQLite database (`students.db`)
 - Existing `students.json` data is imported automatically on first run
 - Command-line commands (`list`, `add`, `find`, ...) as well as the interactive menu
+- Marks per subject and per term (e.g. Databases, 2026-S1), with term averages
+- Class averages per subject and a list of students below a mark
+- Synthetic seed data, so the app can be demoed without real student data
 
 ## Quick Start
 
@@ -43,6 +46,24 @@ python main.py course CS101
 python main.py summary
 python main.py --help
 ```
+
+### Subject results
+
+Each student can have one mark per subject per term. Terms look like
+`2026-S1` (year and semester); subject names are tidied, so
+`databases` and `Databases` are the same subject.
+
+```bash
+python main.py --db demo.db seed            # 30 made-up students, 360 results
+python main.py --db demo.db results "Aisha Doyle"
+python main.py --db demo.db add-result "Aisha Doyle" Databases 2026-S1 74
+python main.py --db demo.db subject-average Maths --term 2026-S1
+python main.py --db demo.db below Databases 40
+```
+
+`seed` only fills an empty database, so it can never overwrite real
+records. The data is random but repeatable (`--random-seed`), and each
+student has a consistent "ability", so their marks look realistic.
 
 Commands that change data save immediately. Use `--db path/to/file.db`
 to work with a different database file.
@@ -75,7 +96,8 @@ menu.py           Menu display and validated input helpers
 student.py        Student base class and the two student types
 course.py         Course class
 manager.py        StudentManager: storage, search, save/load
-database.py       SQLite storage (StudentDatabase)
+database.py       SQLite storage: students and subject results
+seed.py           Synthetic (made-up) demo data
 test_students.py  pytest tests
 students.db       Saved student data (created on first run)
 ```
