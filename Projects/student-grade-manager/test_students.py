@@ -121,3 +121,83 @@ def test_json_data_can_be_moved_into_database(tmp_path, capsys):
     reloaded = StudentManager()
     reloaded.load_from_database(db_file)
     assert reloaded.find_student("Aisha").programming_language == "Python"
+
+
+# ------------------------------------------------------------
+# Command-line interface
+# ------------------------------------------------------------
+
+from main import main  # noqa: E402
+
+ADD_AISHA = ["add", "--type", "cs", "--name", "Aisha", "--mark", "72",
+             "--age", "20", "--course-name", "BSc CS", "--course-code", "CS101",
+             "--language", "Python"]
+
+
+def run(db_file, *args):
+    return main(["--db", str(db_file), *args])
+
+
+def test_cli_add_then_find(tmp_path, capsys):
+    db_file = tmp_path / "cli.db"
+
+    assert run(db_file, *ADD_AISHA) == 0
+    assert run(db_file, "find", "Aisha") == 0
+
+    output = capsys.readouterr().out
+    assert "Name: Aisha" in output
+    assert "Programming Language: Python" in output
+
+
+def test_cli_add_requires_type_specific_field(tmp_path, capsys):
+    db_file = tmp_path / "cli.db"
+    without_language = ADD_AISHA[:-2]
+
+    assert run(db_file, *without_language) == 1
+    assert "--language is required" in capsys.readouterr().out
+
+
+def test_cli_rejects_duplicate_student(tmp_path, capsys):
+    db_file = tmp_path / "cli.db"
+    run(db_file, *ADD_AISHA)
+
+    assert run(db_file, *ADD_AISHA) == 1
+    assert "already exists" in capsys.readouterr().out
+
+
+def test_cli_update_mark_is_saved(tmp_path, capsys):
+    db_file = tmp_path / "cli.db"
+    run(db_file, *ADD_AISHA)
+
+    assert run(db_file, "update-mark", "Aisha", "39.5") == 0
+
+    manager = StudentManager()
+    manager.load_from_database(db_file)
+    assert manager.find_student("Aisha").get_grade() == "F"
+
+
+def test_cli_remove_is_saved(tmp_path, capsys):
+    db_file = tmp_path / "cli.db"
+    run(db_file, *ADD_AISHA)
+
+    assert run(db_file, "remove", "Aisha") == 0
+    assert run(db_file, "find", "Aisha") == 1
+
+
+def test_cli_course_and_summary(tmp_path, capsys):
+    db_file = tmp_path / "cli.db"
+    run(db_file, *ADD_AISHA)
+    capsys.readouterr()
+
+    assert run(db_file, "course", "CS101") == 0
+    assert run(db_file, "course", "NOPE") == 1
+    assert run(db_file, "summary") == 0
+    assert "Computer Science: 1" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("bad_mark", ["101", "-5", "abc"])
+def test_cli_rejects_invalid_marks(tmp_path, bad_mark, capsys):
+    # argparse prints the error and exits with code 2
+    with pytest.raises(SystemExit) as error:
+        run(tmp_path / "cli.db", "update-mark", "Aisha", bad_mark)
+    assert error.value.code == 2

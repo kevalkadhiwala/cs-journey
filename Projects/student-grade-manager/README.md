@@ -21,12 +21,31 @@ built to practise object-oriented programming.
 - Summary statistics by student type
 - Save to and load from a SQLite database (`students.db`)
 - Existing `students.json` data is imported automatically on first run
+- Command-line commands (`list`, `add`, `find`, ...) as well as the interactive menu
 
 ## Quick Start
 
 ```bash
 python main.py
 ```
+
+This opens the interactive menu. Every action is also available as a
+command, which is handy for scripting:
+
+```bash
+python main.py list
+python main.py find Aisha
+python main.py add --type cs --name Aisha --mark 72 --age 20     --course-name "BSc CS" --course-code CS101 --language Python
+python main.py add --type business --name Tom --mark 55 --age 22     --course-name Business --course-code BS200 --specialisation Marketing
+python main.py update-mark Aisha 68.5
+python main.py remove Tom
+python main.py course CS101
+python main.py summary
+python main.py --help
+```
+
+Commands that change data save immediately. Use `--db path/to/file.db`
+to work with a different database file.
 
 No external packages are needed to run the app (SQLite is built into Python). The data file is always
 read from and saved to the project folder, whichever folder you run it from.
@@ -50,7 +69,8 @@ python -m pytest
 ## Project Structure
 
 ```text
-main.py           Menu loop (program entry point)
+main.py           Program entry point: menu or command
+cli.py            Command-line arguments (argparse)
 menu.py           Menu display and validated input helpers
 student.py        Student base class and the two student types
 course.py         Course class
