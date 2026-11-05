@@ -30,7 +30,8 @@ results through a FastAPI REST API and web dashboard.
 - REST API
 - Security statistics
 - Recent event monitoring
-- IP and event-type filtering
+- IP, event-type and date-range filtering
+- Paginated event browsing
 - Web-based security dashboard
 
 ## Quick Start
@@ -133,7 +134,25 @@ These factors contribute to a risk score and classification:
 | `/suspicious-ips` | Suspicious IP analysis |
 | `/high-risk` | High-risk IPs |
 | `/targeted-accounts` | Accounts attacked from many IPs |
-| `/events` | Recent and filtered security events |
+| `/events` | Security events, newest first, with filters and paging |
+
+### Filtering and paging `/events`
+
+| Parameter | Example | Meaning |
+|---|---|---|
+| `ip_address` | `192.168.1.99` | Only this IP |
+| `event_type` | `LOGIN_FAILED` | Only this event type |
+| `start` | `2026-08-18` or `2026-08-18 09:00:00` | From this date/time |
+| `end` | `2026-08-18` or `2026-08-18 10:00:00` | Up to this date/time (a date alone includes the whole day) |
+| `limit` | `10` | Events per page (1-100, default 10) |
+| `offset` | `20` | How many events to skip |
+
+```text
+/events?event_type=LOGIN_FAILED&start=2026-08-18&limit=5&offset=5
+```
+
+The response includes `total` (all matching events), so a client can
+work out how many pages there are. Invalid dates return `400`.
 
 ## Example
 

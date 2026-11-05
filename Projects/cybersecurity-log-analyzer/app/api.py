@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Query
+from datetime import datetime
+
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -104,27 +106,66 @@ def targeted_accounts():
         "targeted_accounts": reports
     }
 
+def parse_date_filter(value, name, end_of_day=False):
+    # Accepts "YYYY-MM-DD" or "YYYY-MM-DD HH:MM:SS" and returns the
+    # timestamp text stored in the database. A date on its own means
+    # the start of that day, or the end of it for the "end" filter.
+    if value is None:
+        return None
+
+    value = value.strip()
+
+    try:
+        datetime.strptime(value, config.TIMESTAMP_FORMAT)
+        return value
+    except ValueError:
+        pass
+
+    try:
+        datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{name} must be YYYY-MM-DD or YYYY-MM-DD HH:MM:SS"
+        )
+
+    return value + (" 23:59:59" if end_of_day else " 00:00:00")
+
+
 @app.get("/events")
 def get_events(
     ip_address: str | None = Query(default=None),
-    event_type: str | None = Query(default=None)
+    event_type: str | None = Query(default=None),
+    start: str | None = Query(default=None, description="from this date/time"),
+    end: str | None = Query(default=None, description="up to this date/time"),
+    limit: int = Query(default=10, ge=1, le=100),
+    offset: int = Query(default=0, ge=0)
 ):
+
+    start_time = parse_date_filter(start, "start")
+    end_time = parse_date_filter(end, "end", end_of_day=True)
+
+    if start_time and end_time and start_time > end_time:
+        raise HTTPException(status_code=400, detail="start must be before end")
 
     db = get_database()
 
-    if ip_address or event_type:
+    filters = {
+        "ip_address": ip_address,
+        "event_type": event_type,
+        "start": start_time,
+        "end": end_time
+    }
 
-        events = db.get_events_filtered(
-            ip_address=ip_address,
-            event_type=event_type
-        )
+    events = db.get_events_filtered(**filters, limit=limit, offset=offset)
 
-    else:
-
-        events = db.get_recent_events()
+    total = db.count_events_filtered(**filters)
 
     return {
         "count": len(events),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
         "events": [
             {
                 "timestamp": event.timestamp,

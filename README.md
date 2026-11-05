@@ -15,16 +15,16 @@ logs, detects suspicious login behaviour and distributed attacks,
 calculates risk scores, and exposes the results through a REST API
 and web dashboard.
 Uses parameterised SQL, XSS-safe output and restricted CORS,
-with 41 automated tests.
+with 54 automated tests.
 
 [View Project →](./Projects/cybersecurity-log-analyzer)
 
 ### Student Grade Manager
 Python | OOP | SQLite | pytest
 
-CLI application demonstrating object-oriented programming,
-data persistence, validation and student statistics,
-with 21 automated tests.
+CLI application (interactive menu and commands) demonstrating
+object-oriented programming, data persistence, validation and
+student statistics, with 30 automated tests.
 
 [View Project →](./Projects/student-grade-manager)
 

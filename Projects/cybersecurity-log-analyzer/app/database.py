@@ -90,16 +90,10 @@ class DatabaseManager:
 
         return rows
 
-    def get_events_filtered(self, ip_address=None, event_type=None):
-
-        connection = self.connect()
-        cursor = connection.cursor()
-
-        query = """
-            SELECT timestamp, ip_address, event_type, username
-            FROM security_events
-        """
-
+    def _build_filters(self, ip_address=None, event_type=None,
+                       start=None, end=None):
+        # Builds the WHERE clause and its values for the filter methods.
+        # Values are always passed as ? parameters, never put into the SQL.
         conditions = []
         values = []
 
@@ -111,8 +105,39 @@ class DatabaseManager:
             conditions.append("event_type = ?")
             values.append(event_type)
 
+        # Timestamps are stored as "YYYY-MM-DD HH:MM:SS" text, which sorts
+        # in date order, so plain text comparison works for date ranges.
+        if start:
+            conditions.append("timestamp >= ?")
+            values.append(start)
+
+        if end:
+            conditions.append("timestamp <= ?")
+            values.append(end)
+
+        where = ""
+
         if conditions:
-            query += " WHERE " + " AND ".join(conditions)
+            where = " WHERE " + " AND ".join(conditions)
+
+        return where, values
+
+    def get_events_filtered(self, ip_address=None, event_type=None,
+                            start=None, end=None, limit=None, offset=0):
+
+        connection = self.connect()
+        cursor = connection.cursor()
+
+        where, values = self._build_filters(ip_address, event_type, start, end)
+
+        query = """
+            SELECT timestamp, ip_address, event_type, username
+            FROM security_events
+        """ + where + " ORDER BY timestamp DESC, id DESC"
+
+        if limit is not None:
+            query += " LIMIT ? OFFSET ?"
+            values = values + [limit, offset]
 
         cursor.execute(query, values)
 
@@ -133,6 +158,22 @@ class DatabaseManager:
             events.append(event)
 
         return events
+
+    def count_events_filtered(self, ip_address=None, event_type=None,
+                              start=None, end=None):
+
+        connection = self.connect()
+        cursor = connection.cursor()
+
+        where, values = self._build_filters(ip_address, event_type, start, end)
+
+        cursor.execute("SELECT COUNT(*) FROM security_events" + where, values)
+
+        total = cursor.fetchone()[0]
+
+        connection.close()
+
+        return total
 
     def get_event_statistics(self):
 

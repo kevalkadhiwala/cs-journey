@@ -102,6 +102,8 @@
 
         .filters {
             display: flex;
+            flex-wrap: wrap;
+            align-items: center;
             gap: 10px;
             margin-top: 15px;
         }
@@ -117,6 +119,25 @@
         .filters button {
             cursor: pointer;
             font-weight: bold;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            cursor: default;
+            opacity: 0.5;
         }
         
     </style>
@@ -177,7 +198,17 @@
             <option value="LOGIN_FAILED">Login Failed</option>
         </select>
 
-        <button onclick="loadEvents()">
+        <label>
+            From
+            <input type="date" id="start-filter">
+        </label>
+
+        <label>
+            To
+            <input type="date" id="end-filter">
+        </label>
+
+        <button onclick="currentOffset = 0; loadEvents()">
             Search
         </button>
 
@@ -247,6 +278,12 @@
         </tbody>
 
     </table>
+
+    <div class="pagination">
+        <button id="prev-page" onclick="changePage(-1)">← Previous</button>
+        <span id="page-info"></span>
+        <button id="next-page" onclick="changePage(1)">Next →</button>
+    </div>
 
     <script>
     // Log data (usernames, IPs) can be controlled by an attacker,
@@ -406,10 +443,20 @@
             `;
         }
 
+    const PAGE_SIZE = 10;
+    let currentOffset = 0;
+
+    function changePage(direction) {
+        currentOffset = Math.max(0, currentOffset + direction * PAGE_SIZE);
+        loadEvents();
+    }
+
     async function loadEvents() {
 
         const ip = document.getElementById("ip-filter").value;
         const eventType = document.getElementById("event-filter").value;
+        const start = document.getElementById("start-filter").value;
+        const end = document.getElementById("end-filter").value;
 
         let url = "/events";
 
@@ -423,9 +470,18 @@
             params.append("event_type", eventType);
         }
 
-        if (params.toString()) {
-            url += "?" + params.toString();
+        if (start) {
+            params.append("start", start);
         }
+
+        if (end) {
+            params.append("end", end);
+        }
+
+        params.append("limit", PAGE_SIZE);
+        params.append("offset", currentOffset);
+
+        url += "?" + params.toString();
 
         const response = await fetch(url);
 
@@ -433,6 +489,14 @@
 
         const tableBody =
             document.getElementById("events-table-body");
+
+        if (!response.ok) {
+            tableBody.innerHTML =
+                `<tr><td colspan="4">${escapeHtml(data.detail)}</td></tr>`;
+            return;
+        }
+
+        updatePagination(data);
 
         tableBody.innerHTML = "";
 
@@ -449,6 +513,17 @@
 
             tableBody.appendChild(row);
         }
+    }
+
+    function updatePagination(data) {
+        const first = data.total === 0 ? 0 : data.offset + 1;
+        const last = data.offset + data.count;
+
+        document.getElementById("page-info").textContent =
+            `Showing ${first}-${last} of ${data.total}`;
+
+        document.getElementById("prev-page").disabled = data.offset === 0;
+        document.getElementById("next-page").disabled = last >= data.total;
     }
 
         loadStatistics();

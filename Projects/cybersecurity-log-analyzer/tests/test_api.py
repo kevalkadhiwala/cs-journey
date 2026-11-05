@@ -50,6 +50,39 @@ def test_events_filter(client):
     assert data["count"] == 3
 
 
+def test_events_date_range(client):
+    data = client.get("/events", params={"start": "2026-08-18 11:00:00",
+                                         "end": "2026-08-18 23:59:59"}).json()
+    assert data["total"] == 5
+
+
+def test_events_date_only_end_includes_whole_day(client):
+    data = client.get("/events", params={"end": "2026-08-18"}).json()
+    assert data["total"] == 14
+
+
+def test_events_pagination(client):
+    first = client.get("/events", params={"limit": 10, "offset": 0}).json()
+    second = client.get("/events", params={"limit": 10, "offset": 10}).json()
+    assert (first["count"], second["count"]) == (10, 4)
+    assert first["total"] == second["total"] == 14
+
+
+@pytest.mark.parametrize("params", [
+    {"start": "18/08/2026"},
+    {"end": "not-a-date"},
+    {"start": "2026-08-19", "end": "2026-08-18"},
+])
+def test_events_rejects_bad_dates(client, params):
+    response = client.get("/events", params=params)
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize("params", [{"limit": 0}, {"limit": 101}, {"offset": -1}])
+def test_events_rejects_bad_paging(client, params):
+    assert client.get("/events", params=params).status_code == 422
+
+
 def test_dashboard_is_served(client):
     response = client.get("/dashboard")
     assert response.status_code == 200
