@@ -16,6 +16,3 @@ Thumbs.db
 # Runtime data created by the apps
 Projects/student-grade-manager/students.json
 *.db
-
-# Local scratch output
-Claude outputs/

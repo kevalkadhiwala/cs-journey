@@ -1,7 +1,8 @@
 # Student Grade Manager
 
-A command-line Python application for managing student records,
-built to practise object-oriented programming.
+A Python application for managing student records and subject results,
+with a command line, a REST API and an optional AI assistant.
+Started as an object-oriented programming exercise.
 
 ## OOP Concepts Demonstrated
 
@@ -25,6 +26,8 @@ built to practise object-oriented programming.
 - Marks per subject and per term (e.g. Databases, 2026-S1), with term averages
 - Class averages per subject and a list of students below a mark
 - Synthetic seed data, so the app can be demoed without real student data
+- REST API (FastAPI) with validated query parameters
+- Optional AI assistant: plain-English questions answered through safe tool calls
 
 ## Quick Start
 
@@ -68,15 +71,73 @@ student has a consistent "ability", so their marks look realistic.
 Commands that change data save immediately. Use `--db path/to/file.db`
 to work with a different database file.
 
-No external packages are needed to run the app (SQLite is built into Python). The data file is always
+The command line needs no external packages (SQLite is built into Python). The data file is always
 read from and saved to the project folder, whichever folder you run it from.
+
+## REST API
+
+```bash
+pip install -r requirements.txt
+uvicorn api:app --reload        # then open http://127.0.0.1:8000/docs
+```
+
+| Endpoint | Description |
+|---|---|
+| `GET /students` | All students: name, type, course, mark, grade (no ages) |
+| `GET /students/{name}` | One student with their subject results |
+| `GET /subjects` | Subjects that have results |
+| `GET /subjects/{subject}/average?term=` | Class average, optionally for one term |
+| `GET /subjects/{subject}/below?mark=&term=` | Students under a mark |
+| `POST /ask` | Optional AI assistant (see below) |
+
+Bad values (a term like `2026-S3`, a mark of 150) are rejected with 422.
+
+## AI Assistant (optional)
+
+`POST /ask` with `{"question": "Who is below 40 in Databases in 2026-S1?"}`.
+
+The model never touches the database or writes SQL. It works through
+**tool calling**: it may only ask for one of four read-only functions,
+and this code runs them:
+
+| Tool | What it returns |
+|---|---|
+| `list_subjects` | Subject names |
+| `class_average(subject, term?)` | Average and number of marks |
+| `students_below(subject, mark, term?)` | Names and marks under a threshold |
+| `student_results(name)` | One student's subject marks |
+
+```text
+question -> model asks for a tool -> arguments validated (Pydantic)
+         -> tool runs on SQLite -> result back to the model
+         -> model answers -> every number checked against tool results
+```
+
+Safeguards:
+
+- **Allow-list of tools.** Unknown tools (`run_sql`) and bad arguments
+  (a mark of 500) are refused and the model is told why. Nothing runs.
+- **Grounded numbers.** Every number in the answer must appear in a tool
+  result or the question, so the model cannot invent a mark or average.
+  An answer that fails is retried once, then refused, and the raw tool
+  results are returned instead.
+- **Limits.** At most 4 tool calls per question.
+- **Privacy.** Tools return names and marks only, and the demo data is
+  synthetic.
+- **Off by default.** With `LLM_PROVIDER=off`, `/ask` returns 503 and
+  every other endpoint works as normal. Copy `.env.example` to `.env`
+  to choose Ollama or an OpenAI-compatible API.
+- **Tested without a network** using a fake model.
 
 ## Running the Tests
 
 ```bash
-pip install pytest
+pip install -r requirements.txt
 python -m pytest
 ```
+
+56 tests cover the student classes, the database, the command line,
+the REST API and the AI assistant's safeguards.
 
 ## Improvements
 
@@ -98,6 +159,10 @@ course.py         Course class
 manager.py        StudentManager: storage, search, save/load
 database.py       SQLite storage: students and subject results
 seed.py           Synthetic (made-up) demo data
+api.py            FastAPI REST API
+assistant.py      AI assistant: safe tools, validation, number checks
+llm.py            Swappable LLM providers (off / Ollama / OpenAI-compatible)
+test_api.py       API and assistant tests (fake model, no network)
 test_students.py  pytest tests
 students.db       Saved student data (created on first run)
 ```
