@@ -25,3 +25,29 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run tests
         run: python -m pytest -q
+
+  docker:
+    # Build each image and check the API answers inside the container
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - project: cybersecurity-log-analyzer
+            check: /suspicious-ips
+          - project: student-grade-manager
+            check: /subjects
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t app Projects/${{ matrix.project }}
+      - name: Start container and call the API
+        run: |
+          docker run -d --name app -p 8000:8000 app
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8000/ && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000${{ matrix.check }}
+      - name: Show container logs
+        if: always()
+        run: docker logs app
