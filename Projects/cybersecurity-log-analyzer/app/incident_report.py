@@ -14,9 +14,11 @@ Whatever the model returns is checked before it is used:
 Prompt-injection defence: usernames come straight from log files, so an
 attacker can put text such as "ignore your instructions" in them. Log
 fields are cleaned (no control characters or angle brackets, length
-capped), usernames that look like instructions are removed, the rest are sent inside <log_data> tags that the model is told to treat as
-data only, flagged when they look like instructions, and the output
-checks above catch an answer that was steered anyway.
+capped), usernames that look like instructions are replaced and
+flagged, and the rest is sent inside <log_data> tags that the model is
+told to treat as data only. The output checks above catch an answer
+that was steered anyway.
+
 A bad answer gets one retry with the error explained. If that also
 fails, or no model is configured, the rule-based report is returned,
 so the feature never breaks the app.

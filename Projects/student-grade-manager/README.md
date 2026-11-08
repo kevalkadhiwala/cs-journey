@@ -1,168 +1,181 @@
 # Student Grade Manager
 
-A Python application for managing student records and subject results,
-with a command line, a REST API and an optional AI assistant.
-Started as an object-oriented programming exercise.
+This started as an OOP exercise: a menu program for adding
+students and working out their grades. I kept building on it, and it now
+has SQLite storage, a command line, marks per subject and term, a REST API,
+and an optional AI assistant you can ask questions in plain English.
 
-## OOP Concepts Demonstrated
+**Built with:** Python, SQLite, FastAPI, Pydantic, pytest, Docker, and
+optionally Ollama or any OpenAI-compatible model.
 
-- Abstract classes (`Student` with abstract `course_info` and `student_type`)
-- Inheritance (`ComputerScienceStudent`, `BusinessStudent`)
-- Polymorphism (`display()`, `to_dict()` overridden per student type)
-- Encapsulation (validated properties for name, mark and age)
-- SQLite persistence (JSON still supported for import)
-- Error handling and input validation
+## What it does
 
-## Features
+- Add, find, update and remove students, with grades A-F and pass/fail
+- Two kinds of student (Computer Science and Business) that share a base class
+- One mark per subject per term (like Databases in 2026-S1)
+- Class average for a subject, and who's below a given mark
+- Made-up demo data, so I never need real student records to show it off
+- Everything works from the menu, from commands, or over the API
 
-- Add, find, remove and list students
-- Update marks with validation (0-100, decimals allowed)
-- Grades A-F and pass/fail status
-- Find students by course
-- Summary statistics by student type
-- Save to and load from a SQLite database (`students.db`)
-- Existing `students.json` data is imported automatically on first run
-- Command-line commands (`list`, `add`, `find`, ...) as well as the interactive menu
-- Marks per subject and per term (e.g. Databases, 2026-S1), with term averages
-- Class averages per subject and a list of students below a mark
-- Synthetic seed data, so the app can be demoed without real student data
-- REST API (FastAPI) with validated query parameters
-- Optional AI assistant: plain-English questions answered through safe tool calls
+The OOP parts I was practising: an abstract `Student` class with
+`ComputerScienceStudent` and `BusinessStudent` inheriting from it,
+methods like `display()` and `to_dict()` overridden per type, and
+properties that validate the name, mark and age.
 
-## Quick Start
+## How it fits together
 
-```bash
-python main.py
+```mermaid
+flowchart LR
+    menu[menu.py<br/>interactive menu] --> manager
+    cli[cli.py<br/>commands] --> manager
+    manager[manager.py<br/>StudentManager] --> db[(SQLite<br/>database.py)]
+    seed[seed.py<br/>demo data] --> db
+    api[api.py<br/>FastAPI] --> manager
+    api --> db
+    api --> assistant[assistant.py]
+    assistant -- validated tool calls --> db
+    assistant -. optional .-> llm[LLM<br/>Ollama / OpenAI]
 ```
 
-This opens the interactive menu. Every action is also available as a
-command, which is handy for scripting:
+The menu, the commands and the API all go through the same
+`StudentManager` and the same database, so they always agree.
+
+## Running it
+
+The menu and commands only need Python (SQLite comes with it):
 
 ```bash
+python main.py                    # interactive menu
 python main.py list
 python main.py find Aisha
-python main.py add --type cs --name Aisha --mark 72 --age 20     --course-name "BSc CS" --course-code CS101 --language Python
-python main.py add --type business --name Tom --mark 55 --age 22     --course-name Business --course-code BS200 --specialisation Marketing
+python main.py add --type cs --name Aisha --mark 72 --age 20 --course-name "BSc CS" --course-code CS101 --language Python
 python main.py update-mark Aisha 68.5
-python main.py remove Tom
-python main.py course CS101
 python main.py summary
 python main.py --help
 ```
 
-### Subject results
-
-Each student can have one mark per subject per term. Terms look like
-`2026-S1` (year and semester); subject names are tidied, so
-`databases` and `Databases` are the same subject.
+Subject results, using a separate demo database:
 
 ```bash
-python main.py --db demo.db seed            # 30 made-up students, 360 results
+python main.py --db demo.db seed                 # 30 made-up students, 360 results
 python main.py --db demo.db results "Aisha Doyle"
 python main.py --db demo.db add-result "Aisha Doyle" Databases 2026-S1 74
 python main.py --db demo.db subject-average Maths --term 2026-S1
 python main.py --db demo.db below Databases 40
 ```
 
-`seed` only fills an empty database, so it can never overwrite real
-records. The data is random but repeatable (`--random-seed`), and each
-student has a consistent "ability", so their marks look realistic.
+Terms look like `2026-S1` (year and semester), and subject names get tidied,
+so `databases` and `Databases` count as the same subject. `seed` refuses to
+touch a database that already has students in it, so it can't wipe real data.
+The demo data is random but repeatable (`--random-seed`). Each made-up
+student gets an "ability" level, so a strong student stays strong across
+subjects instead of getting random marks everywhere.
 
-Commands that change data save immediately. Use `--db path/to/file.db`
-to work with a different database file.
+### The API
 
-The command line needs no external packages (SQLite is built into Python). The data file is always
-read from and saved to the project folder, whichever folder you run it from.
+With Docker, which starts with the demo data already loaded:
 
-## REST API
+```bash
+docker build -t grade-manager .
+docker run -p 8000:8000 grade-manager
+```
+
+Or locally:
 
 ```bash
 pip install -r requirements.txt
-uvicorn api:app --reload        # then open http://127.0.0.1:8000/docs
+uvicorn api:app --reload
 ```
 
-| Endpoint | Description |
+Then open http://127.0.0.1:8000/docs.
+
+| Endpoint | What you get |
 |---|---|
-| `GET /students` | All students: name, type, course, mark, grade (no ages) |
-| `GET /students/{name}` | One student with their subject results |
+| `GET /students` | Everyone's name, type, course, mark and grade (ages stay private) |
+| `GET /students/{name}` | One student and their subject results |
 | `GET /subjects` | Subjects that have results |
-| `GET /subjects/{subject}/average?term=` | Class average, optionally for one term |
+| `GET /subjects/{subject}/average?term=` | Class average, for one term or all |
 | `GET /subjects/{subject}/below?mark=&term=` | Students under a mark |
-| `POST /ask` | Optional AI assistant (see below) |
+| `POST /ask` | The AI assistant (below) |
 
-Bad values (a term like `2026-S3`, a mark of 150) are rejected with 422.
+Bad input like a term of `2026-S3` or a mark of 150 gets a 422.
 
-## AI Assistant (optional)
+## The AI assistant
 
-`POST /ask` with `{"question": "Who is below 40 in Databases in 2026-S1?"}`.
+Send `POST /ask` with something like
+`{"question": "Who is below 40 in Databases in 2026-S1?"}`.
 
-The model never touches the database or writes SQL. It works through
-**tool calling**: it may only ask for one of four read-only functions,
-and this code runs them:
+The model never sees the database and never writes SQL. It can only ask me
+to run one of four read-only functions, and my code runs them:
 
-| Tool | What it returns |
+| Tool | Returns |
 |---|---|
 | `list_subjects` | Subject names |
-| `class_average(subject, term?)` | Average and number of marks |
-| `students_below(subject, mark, term?)` | Names and marks under a threshold |
+| `class_average(subject, term?)` | The average and how many marks it's based on |
+| `students_below(subject, mark, term?)` | Names and marks under the threshold |
 | `student_results(name)` | One student's subject marks |
 
+One question goes round a loop like this:
+
 ```text
-question -> model asks for a tool -> arguments validated (Pydantic)
-         -> tool runs on SQLite -> result back to the model
-         -> model answers -> every number checked against tool results
+question -> model picks a tool -> arguments checked with Pydantic
+         -> tool runs on SQLite -> result goes back to the model
+         -> model answers -> every number checked against the tool results
 ```
 
-Safeguards:
+Things I put in so it can't go wrong quietly:
 
-- **Allow-list of tools.** Unknown tools (`run_sql`) and bad arguments
-  (a mark of 500) are refused and the model is told why. Nothing runs.
-- **Grounded numbers.** Every number in the answer must appear in a tool
-  result or the question, so the model cannot invent a mark or average.
-  An answer that fails is retried once, then refused, and the raw tool
-  results are returned instead.
-- **Limits.** At most 4 tool calls per question.
-- **Privacy.** Tools return names and marks only, and the demo data is
-  synthetic.
-- **Off by default.** With `LLM_PROVIDER=off`, `/ask` returns 503 and
-  every other endpoint works as normal. Copy `.env.example` to `.env`
-  to choose Ollama or an OpenAI-compatible API.
-- **Tested without a network** using a fake model.
+- Only those four tools exist. If the model asks for something else (like
+  `run_sql`) or passes a silly argument (a mark of 500), nothing runs and it
+  gets told why.
+- Every number in the final answer has to appear in a tool result or in the
+  question. That stops it inventing an average. A failing answer gets one
+  more try, and after that the raw tool results come back instead.
+- At most 4 tool calls per question.
+- The tools only return names and marks, and the data is made up anyway.
+- It's off by default. `/ask` returns 503 and everything else carries on as
+  normal. Copy `.env.example` to `.env` to turn on Ollama or an
+  OpenAI-compatible API.
 
-## Running the Tests
+## Tests
 
 ```bash
 pip install -r requirements.txt
 python -m pytest
 ```
 
-56 tests cover the student classes, the database, the command line,
-the REST API and the AI assistant's safeguards.
+56 tests: the student classes, the database, the commands, the API, and the
+assistant's checks (with a fake model, so no network needed). GitHub Actions
+runs them on every push, and also builds the Docker image and calls the API
+inside it.
 
-## Improvements
-
-- Fixed missing imports that stopped `main.py` from starting
-- Fixed a save/load mismatch so saved students now reload correctly
-- Decimal marks (e.g. 69.5) now receive the correct grade
-- `True`/`False` are rejected as marks or ages
-- Moved the student classes into the project as `student.py`
-- Added 17 pytest tests
-
-## Project Structure
+## Project layout
 
 ```text
-main.py           Program entry point: menu or command
-cli.py            Command-line arguments (argparse)
-menu.py           Menu display and validated input helpers
+main.py           starts the menu or runs a command
+cli.py            command-line arguments
+menu.py           menu and input helpers
 student.py        Student base class and the two student types
 course.py         Course class
-manager.py        StudentManager: storage, search, save/load
-database.py       SQLite storage: students and subject results
-seed.py           Synthetic (made-up) demo data
-api.py            FastAPI REST API
-assistant.py      AI assistant: safe tools, validation, number checks
-llm.py            Swappable LLM providers (off / Ollama / OpenAI-compatible)
-test_api.py       API and assistant tests (fake model, no network)
-test_students.py  pytest tests
-students.db       Saved student data (created on first run)
+manager.py        StudentManager: search, save, load
+database.py       SQLite: students and subject results
+seed.py           made-up demo data
+api.py            FastAPI app
+assistant.py      the AI assistant: tools, checks, the loop
+llm.py            talks to Ollama / OpenAI-compatible models (or nothing)
+test_students.py  tests for the classes, database and commands
+test_api.py       tests for the API and assistant
+Dockerfile
 ```
+
+## Changes along the way
+
+- Fixed missing imports that stopped `main.py` from starting at all
+- Fixed saving and loading so saved students actually come back
+- Decimal marks like 69.5 now get the right grade
+- `True` and `False` aren't accepted as marks or ages any more
+- Moved from a JSON file to SQLite (old `students.json` files still import)
+- Added commands alongside the menu
+- Subject marks per term, averages, and the demo data
+- REST API, then the AI assistant
+- Docker image, built and smoke-tested in CI

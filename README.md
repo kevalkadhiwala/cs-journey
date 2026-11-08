@@ -2,50 +2,45 @@
 
 [![tests](https://github.com/kevalkadhiwala/cs-journey/actions/workflows/tests.yml/badge.svg)](https://github.com/kevalkadhiwala/cs-journey/actions/workflows/tests.yml)
 
-Computer Science student at Dublin City University
-interested in software development, cybersecurity and backend systems.
+I'm a Computer Science student at Dublin City University. I mostly like
+backend work and security. This repo has the two projects I've spent
+the most time on.
 
-## Featured Projects
+## Projects
 
 ### Cybersecurity Log Analyzer
-Python | FastAPI | SQLite | Pydantic | LLMs | JavaScript | pytest
+Python · FastAPI · SQLite · Pydantic · LLMs · JavaScript · pytest · Docker
 
-Security monitoring application that analyses authentication
-logs, detects suspicious login behaviour and distributed attacks,
-calculates risk scores, writes optional AI incident reports, and
-exposes the results through a REST API
-and web dashboard.
-Uses parameterised SQL, XSS-safe output and restricted CORS,
-with 77 automated tests. The AI output is schema-validated, defended
-against prompt injection in log data, scored on a labelled evaluation
-set, and falls back to rule-based reports, so the app works with AI off.
+Reads authentication logs and picks out brute force, password spraying,
+logins that succeed after a run of failures, and accounts attacked from
+many IPs at once. Every suspicious IP gets a risk score, and you can look
+through it all in a REST API and a dashboard.
 
-[View Project →](./Projects/cybersecurity-log-analyzer)
+There's an optional AI incident report on top. The model only explains
+what my rules found, its answers are validated, and it has defences
+against prompt injection hidden in usernames. I also built a labelled
+evaluation set to score it. With the AI off, you get a rule-based report
+instead. 77 tests, and it runs in Docker.
+
+[Go to the project →](./Projects/cybersecurity-log-analyzer)
 
 ### Student Grade Manager
-Python | OOP | SQLite | FastAPI | LLM tool calling | pytest
+Python · OOP · SQLite · FastAPI · LLM tool calling · pytest · Docker
 
-Student records app with a CLI, a REST API and an optional AI
-assistant that answers questions through validated, read-only tool
-calls with number checks (never raw SQL). Subject marks per term,
-synthetic demo data and 56 automated tests.
+Started as an OOP exercise and grew into a proper app. It has SQLite
+storage, a command line, marks per subject and term, and a REST API.
+The optional AI assistant answers questions like "who's below 40 in
+Databases?" by calling four read-only functions I wrote. It never writes
+SQL, and every number in its answer is checked against real results.
+56 tests, and it runs in Docker.
 
-[View Project →](./Projects/student-grade-manager)
+[Go to the project →](./Projects/student-grade-manager)
 
-## Technical Skills
+## Skills
 
-Python ·
-Java ·
-C/C++ ·
-SQL ·
-SQLite ·
-FastAPI ·
-JavaScript ·
-HTML/CSS ·
-pytest ·
-Git/GitHub
+Python · Java · C/C++ · SQL · SQLite · FastAPI · JavaScript · HTML/CSS ·
+pytest · Docker · Git/GitHub
 
 ## Education
 
-BSc Computer Science |
-Dublin City University
+BSc Computer Science, Dublin City University
