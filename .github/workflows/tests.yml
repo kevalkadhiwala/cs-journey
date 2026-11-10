@@ -42,7 +42,8 @@ jobs:
         run: docker build -t app Projects/${{ matrix.project }}
       - name: Start container and call the API
         run: |
-          docker run -d --name app -p 8000:8000 app
+          # Render passes the port in $PORT, so test it the same way
+          docker run -d --name app -e PORT=10000 -p 8000:10000 app
           for i in $(seq 1 20); do
             curl -sf http://127.0.0.1:8000/ && break
             sleep 1

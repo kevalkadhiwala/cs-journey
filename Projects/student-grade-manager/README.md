@@ -89,6 +89,10 @@ uvicorn api:app --reload
 
 Then open http://127.0.0.1:8000/docs.
 
+It's also deployed on [Render](https://render.com) using `render.yaml` in
+the repo root, with the same 30 made-up students. The AI assistant is off
+on the live version, so `/ask` returns 503 there.
+
 | Endpoint | What you get |
 |---|---|
 | `GET /students` | Everyone's name, type, course, mark and grade (ages stay private) |

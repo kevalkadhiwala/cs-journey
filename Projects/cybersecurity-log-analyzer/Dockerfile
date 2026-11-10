@@ -23,8 +23,9 @@ ENV LOG_ANALYZER_DB=/app/db/security.db \
 
 EXPOSE 8000
 
+# Hosts like Render choose the port through $PORT; 8000 otherwise
 HEALTHCHECK --interval=30s --timeout=5s \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"
+    CMD python -c "import os, urllib.request as r; r.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/')"
 
-# Load the sample log (re-running is safe, duplicates are ignored), then serve
-CMD ["sh", "-c", "python -m app.ingest && uvicorn app.api:app --host 0.0.0.0 --port 8000"]
+# Load a fresh demo log of the last 24 hours, then serve
+CMD ["sh", "-c", "python -m app.ingest --demo && uvicorn app.api:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -18,9 +18,10 @@ ENV STUDENTS_DB=/app/data/students.db \
 
 EXPOSE 8000
 
+# Hosts like Render choose the port through $PORT; 8000 otherwise
 HEALTHCHECK --interval=30s --timeout=5s \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/')"
+    CMD python -c "import os, urllib.request as r; r.urlopen('http://127.0.0.1:' + os.getenv('PORT', '8000') + '/')"
 
 # seed only fills an empty database, so a restart with a volume keeps
 # existing data (it just prints an error and carries on)
-CMD ["sh", "-c", "python main.py --db \"$STUDENTS_DB\" seed; uvicorn api:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "python main.py --db \"$STUDENTS_DB\" seed; uvicorn api:app --host 0.0.0.0 --port ${PORT:-8000}"]

@@ -1,0 +1,36 @@
+# Render Blueprint: deploys both projects from their Dockerfiles.
+# On render.com: New > Blueprint > pick this repo.
+#
+# Free plan: the site sleeps after ~15 minutes without visitors and takes
+# up to a minute to wake. Storage is wiped on restart, which is fine here
+# because both apps rebuild their demo data when they start.
+
+services:
+  - type: web
+    name: keval-log-analyzer
+    runtime: docker
+    plan: free
+    rootDir: Projects/cybersecurity-log-analyzer
+    dockerfilePath: Projects/cybersecurity-log-analyzer/Dockerfile
+    dockerContext: Projects/cybersecurity-log-analyzer
+    healthCheckPath: /
+    # Only deploy commits that passed the GitHub Actions tests
+    autoDeployTrigger: checksPass
+    envVars:
+      # No AI on the public demo: no local model there, and a paid API
+      # key would let anyone spend money through the site
+      - key: LLM_PROVIDER
+        value: "off"
+
+  - type: web
+    name: keval-grade-manager
+    runtime: docker
+    plan: free
+    rootDir: Projects/student-grade-manager
+    dockerfilePath: Projects/student-grade-manager/Dockerfile
+    dockerContext: Projects/student-grade-manager
+    healthCheckPath: /
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: LLM_PROVIDER
+        value: "off"
