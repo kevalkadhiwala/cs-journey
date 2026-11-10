@@ -101,6 +101,17 @@ def test_saving_again_replaces_old_rows(tmp_path, capsys):
     assert [s.name for s in reloaded.students] == ["Ben"]
 
 
+def test_removing_a_student_prints_one_message(capsys):
+    manager = StudentManager()
+    manager.add_student(make_cs())
+    capsys.readouterr()
+
+    manager.remove_student(manager.find_student("Aisha"))
+
+    assert capsys.readouterr().out.count("Student removed successfully!") == 1
+    assert manager.students == []
+
+
 def test_new_database_starts_empty(tmp_path):
     manager = StudentManager()
     assert manager.load_from_database(tmp_path / "new.db") == []

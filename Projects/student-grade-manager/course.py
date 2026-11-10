@@ -17,11 +17,10 @@ class Course:
             print("No students Enrolled!")
 
     def remove_student(self, student):
+        # No message here: StudentManager prints one, and printing in
+        # both places showed "Student removed successfully!" twice
         if student in self.students:
             self.students.remove(student)
-            print("Student removed successfully!")
-        else:
-            print("Student is not Enrolled!")         
 
     def display(self):
         print(f"Course: {self.course_name}")
