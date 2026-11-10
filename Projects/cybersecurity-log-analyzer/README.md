@@ -51,11 +51,15 @@ docker build -t log-analyzer .
 docker run -p 8000:8000 log-analyzer
 ```
 
+The container loads a fresh demo log of the last 24 hours when it starts
+(see Demo data below).
+
 Or locally (Python 3.10+):
 
 ```bash
 pip install -r requirements.txt
 python -m app.ingest              # load the sample log and print a report
+                                  # (or --demo for a generated one)
 uvicorn app.api:app --reload
 ```
 
@@ -71,6 +75,46 @@ Each line looks like this:
 
 Broken lines get skipped with a warning instead of crashing the import.
 Running the import twice is fine too, since duplicate events are ignored.
+
+### Demo data
+
+My hand-written sample log is only 14 lines from one day in August, so a
+live demo would always look the same and out of date. `app/demo_logs.py`
+builds a new log covering the last 24 hours instead: a normal day for 15
+office staff (with the odd mistyped password) plus one of each attack:
+
+| Attacker | What it does | What the detector says |
+|---|---|---|
+| `203.0.113.45` | 8 quick guesses at `admin` | brute force, MEDIUM |
+| `198.51.100.23` | 6 different accounts in under a minute | brute force + spraying, HIGH |
+| `203.0.113.88` | 5 guesses at `grace`, then gets in | compromise, HIGH |
+| `192.0.2.150` | 4 guesses at `root`, an hour apart | suspicious, LOW |
+| `198.51.100.77` | a prompt injection as the username | suspicious, LOW, flagged in the report |
+| 4 IPs together | 2 guesses each at `finance` in a few minutes | distributed attack on `finance` |
+
+```bash
+python -m app.ingest --demo               # load it into SQLite
+python -m app.demo_logs --out demo.log    # or save it as a file
+```
+
+The same seed always makes the same events, and only the times move with
+the clock, so the tests check that exactly these attackers are flagged and
+none of the staff are. That test caught a weakness in my own rules: the
+"3 failed logins" count has no time window, so someone who mistypes their
+password three times over a whole day gets flagged. The demo gives each
+person at most one typo a day. Adding a time window to that rule is a
+change I'd like to make next.
+
+The IPs come from ranges reserved for documentation, so none of them are
+real.
+
+## Deployment
+
+`render.yaml` in the repo root deploys this and the student manager to
+[Render](https://render.com) from their Dockerfiles. Only commits that
+pass the GitHub Actions tests get deployed. The live version loads the
+demo log on startup, and the AI is switched off there: there's no local
+model, and a paid API key on a public site would let anyone run up a bill.
 
 ## API
 
@@ -190,8 +234,8 @@ the risk level comes from the rules and not the model.
 python -m pytest
 ```
 
-77 tests: every detection rule, risk scoring, the database, the import,
-the API, and the AI report (validation, retries, outages and injection
+87 tests: every detection rule, risk scoring, the database, the import,
+the demo log generator, the API, and the AI report (validation, retries, outages and injection
 attempts, using a fake model so nothing needs a network). GitHub Actions
 runs them on every push and also builds the Docker image and calls the
 API inside it.
@@ -209,6 +253,7 @@ app/
   llm.py              talks to Ollama / OpenAI-compatible models (or nothing)
   incident_report.py  the report: schema, checks, fallback, injection defence
   evaluate.py         scores reports against the labelled cases
+  demo_logs.py        generates a realistic log of the last 24 hours
 data/
   security.log        sample log
   eval_cases.json     labelled scenarios for the evaluation
@@ -228,3 +273,4 @@ Dockerfile
 - Distributed attack detection per account
 - The optional AI report, then injection defences and the evaluation
 - Docker image, built and smoke-tested in CI
+- Generated demo data and a Render deployment

@@ -20,7 +20,7 @@ There's an optional AI incident report on top. The model only explains
 what my rules found, its answers are validated, and it has defences
 against prompt injection hidden in usernames. I also built a labelled
 evaluation set to score it. With the AI off, you get a rule-based report
-instead. 77 tests, and it runs in Docker.
+instead. 87 tests, and it runs in Docker.
 
 [Go to the project →](./Projects/cybersecurity-log-analyzer)
 

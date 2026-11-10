@@ -3,6 +3,7 @@
 Run from the project folder:
     python -m app.ingest
     python -m app.ingest --log path/to/other.log
+    python -m app.ingest --demo        # a generated log of the last 24 hours
 """
 import argparse
 import sys
@@ -10,6 +11,7 @@ from datetime import datetime
 
 from app.config import DATABASE_PATH, DEFAULT_LOG_PATH, TIMESTAMP_FORMAT
 from app.database import DatabaseManager
+from app.demo_logs import generate
 from app.log_analyzer import LogAnalyzer
 from app.log_event import LogEvent
 
@@ -32,29 +34,34 @@ def parse_line(line):
     return LogEvent(parts[0], parts[1], parts[2], parts[3])
 
 
-def ingest_file(db, log_path):
-    """Store every valid line of the log file. Returns (read, skipped)."""
+def ingest_lines(db, lines):
+    """Store every valid line. Returns (read, skipped)."""
     read = 0
     skipped = 0
 
-    with open(log_path, "r", encoding="utf-8") as file:
-        for line_number, line in enumerate(file, start=1):
+    for line_number, line in enumerate(lines, start=1):
 
-            if not line.strip():
-                continue
+        if not line.strip():
+            continue
 
-            event = parse_line(line)
+        event = parse_line(line)
 
-            if event is None:
-                print(f"Skipping malformed line {line_number}: {line.strip()!r}",
-                      file=sys.stderr)
-                skipped += 1
-                continue
+        if event is None:
+            print(f"Skipping malformed line {line_number}: {line.strip()!r}",
+                  file=sys.stderr)
+            skipped += 1
+            continue
 
-            db.insert_event(event)
-            read += 1
+        db.insert_event(event)
+        read += 1
 
     return read, skipped
+
+
+def ingest_file(db, log_path):
+    """Store every valid line of the log file. Returns (read, skipped)."""
+    with open(log_path, "r", encoding="utf-8") as file:
+        return ingest_lines(db, file)
 
 
 def print_report(analyzer):
@@ -89,13 +96,21 @@ def main(argv=None):
                         help="log file to read (default: data/security.log)")
     parser.add_argument("--db", default=DATABASE_PATH,
                         help="SQLite database file (default: security.db)")
+    parser.add_argument("--demo", action="store_true",
+                        help="load a generated log of the last 24 hours instead")
     args = parser.parse_args(argv)
 
     db = DatabaseManager(args.db)
     db.create_table()
 
-    read, skipped = ingest_file(db, args.log)
-    print(f"Read {read} events from {args.log} ({skipped} malformed lines skipped)")
+    if args.demo:
+        source = "the demo log generator"
+        read, skipped = ingest_lines(db, generate())
+    else:
+        source = args.log
+        read, skipped = ingest_file(db, args.log)
+
+    print(f"Read {read} events from {source} ({skipped} malformed lines skipped)")
 
     analyzer = LogAnalyzer(db.get_events())
     print_report(analyzer)
