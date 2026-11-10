@@ -10,9 +10,10 @@ services:
     name: keval-log-analyzer
     runtime: docker
     plan: free
+    # Paths below are inside rootDir
     rootDir: Projects/cybersecurity-log-analyzer
-    dockerfilePath: Projects/cybersecurity-log-analyzer/Dockerfile
-    dockerContext: Projects/cybersecurity-log-analyzer
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /
     # Only deploy commits that passed the GitHub Actions tests
     autoDeployTrigger: checksPass
@@ -27,8 +28,8 @@ services:
     runtime: docker
     plan: free
     rootDir: Projects/student-grade-manager
-    dockerfilePath: Projects/student-grade-manager/Dockerfile
-    dockerContext: Projects/student-grade-manager
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /
     autoDeployTrigger: checksPass
     envVars:
