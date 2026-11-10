@@ -135,12 +135,33 @@ def check_numbers(answer, question, tool_results):
         raise ValueError(f"the answer uses numbers that no tool returned: {shown}")
 
 
+def check_names(answer, steps):
+    # llama3.2 once listed 1 of the 3 students under a mark. If the answer
+    # names any student from a students_below result, it must name them all.
+    for step in steps:
+        if step["tool"] != "students_below":
+            continue
+
+        names = [row["name"] for row in step["result"]["students"]]
+        missing = [name for name in names if name not in answer]
+
+        if missing and len(missing) < len(names):
+            raise ValueError("the answer leaves out students from the "
+                             f"result: {', '.join(missing)}")
+
+
 def build_prompt(question, steps, problem):
     prompt = f"Question: {question}\n"
 
     for step in steps:
         prompt += (f"\nYou called {step['tool']} with {json.dumps(step['arguments'])}"
                    f"\nResult: {json.dumps(step['result'])}\n")
+
+    if steps:
+        # Small models tend to keep calling tools, so say plainly what's next
+        prompt += ('\nIf these results answer the question, reply now with '
+                   '{"answer": "..."}. Only call another tool if you need '
+                   'different data.\n')
 
     if problem:
         prompt += f"\nYour last reply was rejected: {problem}\nTry again.\n"
@@ -153,7 +174,8 @@ def ask(question, llm, tools):
     problem = None
     rejected_answers = 0
 
-    for _ in range(MAX_STEPS + 1):
+    # A couple of spare rounds for replies that get rejected
+    for _ in range(MAX_STEPS + 2):
         try:
             reply = json.loads(llm.complete(SYSTEM_PROMPT,
                                             build_prompt(question, steps, problem)))
@@ -169,6 +191,7 @@ def ask(question, llm, tools):
             try:
                 answer = FinalAnswer.model_validate(reply).answer
                 check_numbers(answer, question, [s["result"] for s in steps])
+                check_names(answer, steps)
                 return {"answer": answer, "steps": steps, "error": None}
             except (ValidationError, ValueError) as error:
                 rejected_answers += 1
@@ -183,6 +206,24 @@ def ask(question, llm, tools):
 
         try:
             call = ToolCall.model_validate(reply)
+        except ValidationError as error:
+            problem = "; ".join(item["msg"] for item in error.errors())
+            continue
+
+        # llama3.2 also copied "2026-S1" from the examples into questions
+        # about all terms, so a term the user never mentioned is dropped
+        if "term" in call.arguments and not TERM_PATTERN.search(question.upper()):
+            call.arguments.pop("term")
+
+        # Found with llama3.2: it would ask for the same data again and
+        # again instead of answering. Don't run it twice, point at the result.
+        if any(step["tool"] == call.tool and step["arguments"] == call.arguments
+               for step in steps):
+            problem = (f"you already called {call.tool} with those arguments "
+                       "and the result is above; use it to answer")
+            continue
+
+        try:
             result = tools.run(call)
         except ValidationError as error:
             problem = "; ".join(item["msg"] for item in error.errors())

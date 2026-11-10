@@ -32,7 +32,7 @@ storage, a command line, marks per subject and term, and a REST API.
 The optional AI assistant answers questions like "who's below 40 in
 Databases?" by calling four read-only functions I wrote. It never writes
 SQL, and every number in its answer is checked against real results.
-56 tests, and it runs in Docker.
+61 tests, and it runs in Docker.
 
 [Go to the project →](./Projects/student-grade-manager)
 

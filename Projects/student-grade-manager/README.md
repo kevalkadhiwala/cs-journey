@@ -131,11 +131,31 @@ Things I put in so it can't go wrong quietly:
 - Every number in the final answer has to appear in a tool result or in the
   question. That stops it inventing an average. A failing answer gets one
   more try, and after that the raw tool results come back instead.
-- At most 4 tool calls per question.
+- If the answer names any of the students from a "below this mark" result,
+  it has to name all of them, so it can't hand back half a list.
+- At most 4 tool calls per question, and the same call never runs twice.
 - The tools only return names and marks, and the data is made up anyway.
 - It's off by default. `/ask` returns 503 and everything else carries on as
   normal. Copy `.env.example` to `.env` to turn on Ollama or an
   OpenAI-compatible API.
+
+### Trying it with a real model
+
+Fake models in tests only check what I already expected, so I ran 8
+questions with known answers through llama3.2 (3B) on my laptop. The first
+run went badly, and that turned out to be the useful part:
+
+| What happened | What I changed |
+|---|---|
+| It fetched the right data, then asked for the same tool again and again instead of answering, so 4 of 5 questions got no answer | Repeated calls aren't run. The model is told the result is already there, and the prompt says to answer once the data is enough |
+| For "the average in Programming" it copied `2026-S1` from my prompt examples, giving one term's average instead of the overall one | A term the question never mentions is removed in code. Changing the prompt didn't fix it, but the code check did |
+| For "who scored under 45 in Accounting" it named 1 of the 3 students | The answer now has to name all of them or none |
+
+After the fixes, 7 of the 8 questions came back right, and the
+`DROP TABLE` question just got a harmless subject list. The Accounting
+question now gets refused instead of returning half the list. That's
+still a miss, but a safe one: you get the full tool results instead of
+a wrong answer that looks right.
 
 ## Tests
 
@@ -144,7 +164,7 @@ pip install -r requirements.txt
 python -m pytest
 ```
 
-56 tests: the student classes, the database, the commands, the API, and the
+61 tests: the student classes, the database, the commands, the API, and the
 assistant's checks (with a fake model, so no network needed). GitHub Actions
 runs them on every push, and also builds the Docker image and calls the API
 inside it.

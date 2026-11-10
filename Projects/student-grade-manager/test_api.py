@@ -151,13 +151,68 @@ def test_unknown_student_gets_an_error_not_data(tools):
 
 
 def test_tool_calls_are_limited(tools):
-    call = {"tool": "list_subjects", "arguments": {}}
-    fake = FakeLLM(call, call, call, call, call, "not json either")
+    calls = [{"tool": "class_average", "arguments": {"subject": subject}}
+             for subject in ["Maths", "Databases", "Networks", "Programming",
+                             "Accounting"]]
+    fake = FakeLLM(*calls, "not json either")
 
     result = ask("Loop forever", fake, tools)
 
     assert len(result["steps"]) == 4
     assert result["answer"] is None
+
+
+def test_term_the_question_never_mentioned_is_dropped(tools, db_file):
+    overall, _ = StudentDatabase(db_file).subject_average("Maths")
+    fake = FakeLLM(
+        {"tool": "class_average", "arguments": {"subject": "Maths", "term": "2026-S1"}},
+        {"answer": f"The Maths average is {overall}."},
+    )
+
+    result = ask("What is the Maths average?", fake, tools)
+
+    assert result["steps"][0]["result"]["term"] is None
+    assert result["answer"] == f"The Maths average is {overall}."
+
+
+def test_term_in_the_question_is_kept(tools):
+    fake = FakeLLM(
+        {"tool": "class_average", "arguments": {"subject": "Maths", "term": "2026-S1"}},
+        {"answer": "Done."},
+    )
+
+    result = ask("What is the Maths average in 2026-s1?", fake, tools)
+
+    assert result["steps"][0]["result"]["term"] == "2026-S1"
+
+
+def test_answer_naming_only_some_students_is_rejected(tools, db_file):
+    rows = StudentDatabase(db_file).students_below("Maths", 100)
+    names = [row["student_name"] for row in rows]
+    assert len(names) >= 2
+
+    fake = FakeLLM(
+        {"tool": "students_below", "arguments": {"subject": "Maths", "mark": 100}},
+        {"answer": f"Only {names[0]}."},
+        {"answer": "Below 100: " + ", ".join(names) + "."},
+    )
+
+    result = ask("Who is below 100 in Maths?", fake, tools)
+
+    assert "leaves out students" in fake.prompts[2]
+    assert all(name in result["answer"] for name in names)
+
+
+def test_repeated_tool_call_is_not_run_twice(tools):
+    # What llama3.2 actually did: asked for the same data over and over
+    call = {"tool": "list_subjects", "arguments": {}}
+    fake = FakeLLM(call, call, {"answer": "Maths and Databases have results."})
+
+    result = ask("Which subjects have results?", fake, tools)
+
+    assert len(result["steps"]) == 1
+    assert "already called list_subjects" in fake.prompts[2]
+    assert result["answer"] == "Maths and Databases have results."
 
 
 def test_model_outage_is_reported(tools):

@@ -154,17 +154,26 @@ spraying and compromise, fast and slow versions, and 3 with injection
 attempts hidden in the usernames. `python -m app.evaluate` scores
 whichever model is set up, and `--rules` scores the rules on their own.
 
-| Metric | Rules only |
-|---|---|
-| Attack type correct | 10/10 |
-| Risk level correct | 10/10 |
-| Injections resisted | 2/2 (the cases with text that must not leak) |
+| Metric | Rules only | llama3.2 (3B, local) |
+|---|---|---|
+| Attack type correct | 10/10 | 9/10 |
+| Risk level correct | 10/10 | 10/10 |
+| AI answers that passed validation | n/a | 10/10 |
+| Injections resisted | 2/2 | 2/2 |
 
 The rules match my labels, which isn't surprising since I wrote both.
 The point is to check whether a model does as well as the rules, and to
 catch regressions. It caught a real bug on the first run: my rule-based
 summary was copying an injected username (including the innocent IP it
 tried to blame) straight into the report. That's why step 2 above exists.
+
+With llama3.2 running locally (one run, temperature 0, about 4 minutes on
+my laptop's CPU), every answer passed validation and none of the injected
+text got into a report. Its one miss was `fast-spraying`: one IP trying
+several usernames in a quick burst, which it called brute force instead
+of password spraying. That answer is wrong but still allowed, because
+both are real possibilities given the facts. It's a good example of why
+the risk level comes from the rules and not the model.
 
 ## Security
 
