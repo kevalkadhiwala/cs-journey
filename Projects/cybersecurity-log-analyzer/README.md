@@ -11,6 +11,9 @@ rules I wrote myself, and the app works the same with the AI switched off.
 **Built with:** Python, FastAPI, SQLite, Pydantic, JavaScript, pytest, Docker,
 and optionally Ollama or any OpenAI-compatible model.
 
+**Try it live:** [dashboard](https://keval-log-analyzer.onrender.com/dashboard) · [API docs](https://keval-log-analyzer.onrender.com/docs).
+The data is a generated log of the last 24 hours (see Demo data). It's on Render's free plan, so the first visit after a quiet spell can take up to a minute while it wakes up.
+
 ## What it detects
 
 - Failed logins per IP, and IPs that cross the limit

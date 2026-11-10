@@ -22,7 +22,7 @@ against prompt injection hidden in usernames. I also built a labelled
 evaluation set to score it. With the AI off, you get a rule-based report
 instead. 87 tests, and it runs in Docker.
 
-[Go to the project →](./Projects/cybersecurity-log-analyzer)
+[Live dashboard](https://keval-log-analyzer.onrender.com/dashboard) · [Go to the project →](./Projects/cybersecurity-log-analyzer)
 
 ### Student Grade Manager
 Python · OOP · SQLite · FastAPI · LLM tool calling · pytest · Docker
@@ -34,7 +34,10 @@ Databases?" by calling four read-only functions I wrote. It never writes
 SQL, and every number in its answer is checked against real results.
 61 tests, and it runs in Docker.
 
-[Go to the project →](./Projects/student-grade-manager)
+[Live API](https://keval-grade-manager.onrender.com/docs) · [Go to the project →](./Projects/student-grade-manager)
+
+Both live demos are on Render's free plan, so the first visit can take up
+to a minute while they wake up.
 
 ## Skills
 

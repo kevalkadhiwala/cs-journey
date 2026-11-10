@@ -8,6 +8,9 @@ and an optional AI assistant you can ask questions in plain English.
 **Built with:** Python, SQLite, FastAPI, Pydantic, pytest, Docker, and
 optionally Ollama or any OpenAI-compatible model.
 
+**Try it live:** [API docs](https://keval-grade-manager.onrender.com/docs), where you can run every endpoint
+from the browser. It's on Render's free plan, so the first visit after a quiet spell can take up to a minute while it wakes up.
+
 ## What it does
 
 - Add, find, update and remove students, with grades A-F and pass/fail
@@ -89,8 +92,8 @@ uvicorn api:app --reload
 
 Then open http://127.0.0.1:8000/docs.
 
-It's also deployed on [Render](https://render.com) using `render.yaml` in
-the repo root, with the same 30 made-up students. The AI assistant is off
+It's also live at https://keval-grade-manager.onrender.com/docs, deployed on
+[Render](https://render.com) using `render.yaml` in the repo root, with the same 30 made-up students. The AI assistant is off
 on the live version, so `/ask` returns 503 there.
 
 | Endpoint | What you get |
